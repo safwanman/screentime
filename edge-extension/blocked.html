@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Screen time limit reached</title>
+    <style>
+      :root { color-scheme: light; font-family: "Segoe UI", sans-serif; color: #202b47; background: #f4f6fa; }
+      body { display: grid; min-height: 100vh; margin: 0; place-items: center; }
+      main { box-sizing: border-box; width: min(440px, calc(100% - 40px)); padding: 38px; border: 1px solid #e9edf3; border-radius: 20px; background: white; text-align: center; }
+      .icon { display: grid; width: 48px; height: 48px; margin: auto; place-items: center; border-radius: 16px; background: #f0f2ff; color: #5b6ce1; font-weight: 700; }
+      h1 { margin: 22px 0 8px; font-size: 23px; }
+      p { color: #657184; line-height: 1.6; }
+      #site { color: #202b47; font-weight: 600; }
+      footer { margin-top: 24px; color: #8994a5; font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="icon">ST</div>
+      <h1>Time limit reached</h1>
+      <p>Your screen-time limit for <span id="site">this website</span> has been reached. The limit resets tomorrow.</p>
+      <footer>You can adjust your limits in Screen Time Tracker.</footer>
+    </main>
+    <script src="blocked.js"></script>
+  </body>
+</html>
