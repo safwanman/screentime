@@ -51,8 +51,8 @@ Website tracking needs the **Edge extension** as well as the desktop app:
 
 It records the domain, **not** the full web address, page title, or page contents. Website tracking works in Edge with the extension installed; the app alone can’t tell which website you’re visiting.
 
-### Limits and saved data
+### Entertainment limits and saved data
 
-The app compares tracked time with your daily limits. It asks Windows to close an app when it reaches its limit, and the Edge extension redirects an over-limit site to a blocked page. Limits reset each day.
+The dashboard's daily total and daily cap count only usage that matches the editable entertainment apps and websites in Focus lists. When the daily entertainment cap is reached, listed apps are asked to close and listed sites are blocked in Edge until midnight. Focus Mode can block those same targets immediately. Individual app and website limits continue to work independently.
 
 Your history and settings are saved on your PC in `%LOCALAPPDATA%\ScreenTimeTracker\usage.json`. The app can stay running in the background from the system tray; choosing **Exit** stops tracking. More setup detail is in the `README.md`.

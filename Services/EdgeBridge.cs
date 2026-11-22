@@ -129,7 +129,7 @@ public sealed class EdgeBridge : IDisposable
             }
 
             _tracker.UpdateActiveSite(host, DateTime.UtcNow);
-            var blockReason = _tracker.GetSiteBlockReason(host);
+            var blockReason = _tracker.GetSiteBlockReason(host, heartbeat.ShortForm);
 
             response.StatusCode = (int)HttpStatusCode.OK;
             response.ContentType = "application/json";
@@ -178,5 +178,6 @@ public sealed class EdgeBridge : IDisposable
     {
         public string Host { get; set; } = "";
         public long Timestamp { get; set; }
+        public bool ShortForm { get; set; }
     }
 }

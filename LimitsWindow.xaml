@@ -137,8 +137,8 @@
                    VerticalAlignment="Center" />
       </Border>
       <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
-        <TextBlock Text="Screen time limits" FontSize="22" FontWeight="SemiBold" />
-        <TextBlock Text="Set daily caps for your apps and websites."
+        <TextBlock Text="Entertainment and app limits" FontSize="22" FontWeight="SemiBold" />
+        <TextBlock Text="Set a daily entertainment cap and individual app or website limits."
                  FontSize="12"
                  Foreground="#7B8798"
                  Margin="0,5,0,0" />
@@ -163,13 +163,13 @@
                          HorizontalAlignment="Center"
                          VerticalAlignment="Center" />
             </Border>
-            <TextBlock Text="Overall daily limit"
+            <TextBlock Text="Daily entertainment limit"
                        FontWeight="SemiBold"
                        FontSize="14"
                        VerticalAlignment="Center"
                        Margin="10,0,0,0" />
           </StackPanel>
-          <TextBlock Text="Total active app time today. Leave all fields blank to turn this off."
+          <TextBlock Text="Usage from apps and websites on your Focus lists. Leave all fields blank to turn this off."
                      FontSize="11"
                      Foreground="#7B8798"
                      Margin="40,6,0,0" />
@@ -224,7 +224,7 @@
           </Grid.ColumnDefinitions>
           <StackPanel>
             <TextBlock Text="App &amp; website limits" FontWeight="SemiBold" FontSize="16" />
-            <TextBlock Text="Choose which activities get their own daily cap."
+            <TextBlock Text="Set daily caps for individual apps and websites."
                        FontSize="11"
                        Foreground="#7B8798"
                        Margin="0,4,0,0" />
@@ -377,12 +377,50 @@
               Foreground="#657184"
               BorderBrush="#E1E6EF"
               Style="{StaticResource ActionButton}" />
-      <Button Content="Save limits"
+      <Button x:Name="SaveLimitsButton"
+              Content="Save limits"
               Click="SaveLimits_Click"
               Background="#5B6CE1"
               Foreground="White"
               BorderBrush="#5B6CE1"
               Style="{StaticResource ActionButton}" />
     </StackPanel>
+    <Border x:Name="CooldownOverlay"
+            Grid.Row="0"
+            Grid.RowSpan="6"
+            Panel.ZIndex="10"
+            Background="#CCF4F6FA"
+            Visibility="Collapsed">
+      <Border Padding="26"
+              CornerRadius="14"
+              Background="White"
+              BorderBrush="#E0E4FF"
+              BorderThickness="1"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+        <StackPanel>
+          <TextBlock Text="Limit changes are locked"
+                     FontSize="16"
+                     FontWeight="SemiBold"
+                     HorizontalAlignment="Center" />
+          <TextBlock x:Name="CooldownText"
+                     FontSize="12"
+                     Foreground="#657184"
+                     TextAlignment="Center"
+                     TextWrapping="Wrap"
+                     Margin="0,8,0,0" />
+          <Button Content="Unlock limits now"
+                  Click="UnlockLimits_Click"
+                  Padding="16,8"
+                  Margin="0,16,0,0"
+                  HorizontalAlignment="Center"
+                  Background="#F0F2FF"
+                  Foreground="#5363D2"
+                  BorderBrush="#E0E4FF"
+                  FontWeight="SemiBold"
+                  Cursor="Hand" />
+        </StackPanel>
+      </Border>
+    </Border>
   </Grid>
 </Window>

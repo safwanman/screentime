@@ -102,6 +102,9 @@
         <ColumnDefinition Width="*" />
         <ColumnDefinition Width="Auto" />
         <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
         <Border Width="54" Height="38" CornerRadius="12" Background="#EEF3FC">
@@ -114,6 +117,33 @@
         </StackPanel>
       </StackPanel>
       <Button Grid.Column="1"
+              Content="Weekly trends"
+              Click="OpenWeeklyTrends_Click"
+              Padding="12,8"
+              Margin="0,0,8,0"
+              Background="White"
+              Foreground="#5363D2"
+              BorderBrush="#E0E4FF"
+              BorderThickness="1"
+              FontSize="12"
+              FontWeight="SemiBold"
+              Cursor="Hand"
+              VerticalAlignment="Center" />
+      <Button Grid.Column="2"
+              Content="Data tools"
+              Click="OpenDataTools_Click"
+              Padding="12,8"
+              Margin="0,0,8,0"
+              Background="White"
+              Foreground="#5363D2"
+              BorderBrush="#E0E4FF"
+              BorderThickness="1"
+              FontSize="12"
+              FontWeight="SemiBold"
+              Cursor="Hand"
+              VerticalAlignment="Center" />
+      <Button x:Name="SetLimitsButton"
+              Grid.Column="4"
               Content="Set limits"
               Click="OpenLimits_Click"
               Padding="14,8"
@@ -126,7 +156,20 @@
               FontWeight="SemiBold"
               Cursor="Hand"
               VerticalAlignment="Center" />
-      <Border Grid.Column="2"
+      <Button Grid.Column="3"
+              Content="Blocked sites"
+              Click="OpenBlockedSites_Click"
+              Padding="12,8"
+              Margin="0,0,8,0"
+              Background="White"
+              Foreground="#5363D2"
+              BorderBrush="#E0E4FF"
+              BorderThickness="1"
+              FontSize="12"
+              FontWeight="SemiBold"
+              Cursor="Hand"
+              VerticalAlignment="Center" />
+      <Border Grid.Column="5"
               Padding="12,8"
               CornerRadius="12"
               Background="White"
@@ -150,6 +193,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
           </Grid.RowDefinitions>
           <StackPanel Orientation="Horizontal">
             <Ellipse Width="8" Height="8" Fill="#73D6B0" VerticalAlignment="Center" />
@@ -160,7 +204,7 @@
                        Foreground="#D9E1F2" />
           </StackPanel>
           <StackPanel Grid.Row="1" VerticalAlignment="Center" Margin="0,22,0,20">
-            <TextBlock Text="SCREEN TIME TODAY"
+            <TextBlock Text="ENTERTAINMENT TODAY"
                        FontSize="11"
                        FontWeight="SemiBold"
                        Foreground="#AAB6D0" />
@@ -171,16 +215,46 @@
                        Foreground="White"
                        Margin="0,7,0,0" />
             <TextBlock x:Name="TotalTimeDescription"
-                       Text="Time across your active apps"
+                       Text="Time from apps and websites on your Focus lists"
                        FontSize="13"
                        Foreground="#B8C2D8"
                        Margin="0,2,0,0" />
           </StackPanel>
           <TextBlock Grid.Row="2"
-                     Text="Only your active window is counted. Tracking pauses after five minutes away."
+                     Text="Entertainment time comes from your Focus lists. Tracking pauses after five minutes away."
                      FontSize="11"
                      Foreground="#AAB6D0"
                      TextWrapping="Wrap" />
+          <StackPanel Grid.Row="3"
+                      Orientation="Horizontal"
+                      VerticalAlignment="Center"
+                      Margin="0,18,0,0">
+            <Button x:Name="FocusModeButton"
+                    Content="Turn focus mode on"
+                    Click="ToggleFocusMode_Click"
+                    Padding="13,8"
+                    Background="White"
+                    Foreground="#35415E"
+                    BorderBrush="White"
+                    FontSize="11"
+                    FontWeight="SemiBold"
+                    Cursor="Hand" />
+            <Button Content="Focus lists"
+                    Click="OpenFocusSettings_Click"
+                    Padding="12,8"
+                    Margin="8,0,12,0"
+                    Background="#35415E"
+                    Foreground="White"
+                    BorderBrush="#53617D"
+                    FontSize="11"
+                    Cursor="Hand" />
+            <TextBlock x:Name="FocusModeDescription"
+                       Text="Entertainment blockers are off"
+                       FontSize="10"
+                       Foreground="#D9E1F2"
+                       VerticalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
+          </StackPanel>
         </Grid>
       </Border>
 

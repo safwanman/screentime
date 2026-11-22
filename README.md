@@ -15,11 +15,21 @@ On first launch, the app adds itself to your current Windows user's startup apps
 The app saves history and limits to `%LOCALAPPDATA%\ScreenTimeTracker\usage.json`.
 It checks activity once per second to keep limits responsive, but refreshes the dashboard only every five seconds while it is visible. History is saved every 30 seconds and again when you exit, reducing background work and disk writes; an unexpected shutdown could lose up to about 30 seconds of recent usage.
 
-## Set screen-time limits
+## Set entertainment and screen-time limits
 
-Select **Set limits** in the dashboard to set an optional overall daily cap, or add daily limits for individual apps and website domains. Choose an app from the list of currently running apps, or enter a website domain. Set hours, minutes, and seconds separately: type a number into each field or scroll over it to adjust. Hours range from 0 to 24; minutes and seconds range from 0 to 59. Limits reset at midnight.
+The dashboard's daily total now counts entertainment only: usage matching the editable apps and websites in **Focus lists**. Website time is counted separately from Edge app time to avoid double-counting. Your previous optional overall daily cap is now a **daily entertainment limit**; it resets at midnight. Add individual daily limits for any app or website domain from **Set limits**. Choose an app from the list of currently running apps, or enter a website domain. Set hours, minutes, and seconds separately: type a number into each field or scroll over it to adjust. Hours range from 0 to 24; minutes and seconds range from 0 to 59.
 
-At an app or overall daily limit, the tracker requests Windows to close the active app; an app's unsaved-work prompt may delay closing. With the Edge extension installed, an over-limit site (or any site after the overall limit is reached) is redirected to a local blocked page. Website limits require the desktop app and Edge extension to be running.
+When the daily entertainment limit is reached, the tracker asks Windows to close listed entertainment apps and blocks listed entertainment websites in Edge until midnight. An app's unsaved-work prompt may delay closing. Apps and websites outside the Focus lists remain available unless they have their own individual limit. Domains added to **Blocked sites** are always blocked.
+
+Short-form rules block TikTok entirely, plus YouTube Shorts, Instagram Reels, Facebook Reels, and Snapchat Spotlight routes. This only recognizes those known site paths; it cannot detect every short video embedded on arbitrary websites. The extension checks the page path locally and sends only the site hostname and a short-form yes/no flag to the desktop app. Full paths and page content are not sent or saved. Blocking requires the desktop app and Edge extension to be running.
+
+Use **Focus mode** on the dashboard to block the same entertainment list immediately, before the daily limit is reached. The starter list covers streaming, social, gaming, and music services. Listed apps are asked to close gracefully when Focus Mode starts or when they become active; Windows may still show an unsaved-work prompt. Listed website domains and their subdomains are redirected to the local blocked page in Edge. Focus Mode stays on until you turn it off, including across app restarts. Add or remove entries with **Focus lists**. App matching uses the app's displayed name or process name; there is no universal way to identify every entertainment app or website automatically.
+
+When an individual app or website limit is reached, limit settings are locked until local midnight. Open the locked limits screen and choose **Unlock limits now** to unlock early after confirmation. The reached limit remains enforced; the same already-reached limit will not immediately relock the editor that day. A different limit reaching its cap can start a new lockout. The lockout is saved locally and remains in effect if the tracker is restarted.
+
+Choose **Weekly trends** to compare app time from the last seven calendar days (including today) with the previous seven days. Website time is shown separately as a subset of Edge app time, not added twice.
+
+Choose **Data tools** to export usage history as CSV, back up history and settings as JSON, or clear all history, limits, and lockout data. Clearing requires confirmation and cannot be undone; make a backup first if you may want to keep the data.
 
 ## Enable Edge website tracking
 

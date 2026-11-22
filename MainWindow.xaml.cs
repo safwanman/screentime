@@ -24,6 +24,7 @@ public partial class MainWindow : Window
     private readonly System.Windows.Forms.ToolStripMenuItem _startupMenuItem;
     private readonly HashSet<string> _notifiedLimits = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<int> _closeRequestedProcessIds = [];
+    private readonly HashSet<int> _focusCloseRequestedProcessIds = [];
     private int _dashboardRefreshTicks;
     private bool _exitRequested;
     private string? _limitStateDay;
@@ -83,6 +84,8 @@ public partial class MainWindow : Window
 
         UpdateDashboard();
         UpdateStatus();
+        UpdateLimitsButton();
+        UpdateFocusModeControls();
         _timer.Start();
         Closed += OnClosed;
         Closing += OnClosing;
@@ -95,8 +98,10 @@ public partial class MainWindow : Window
         try
         {
             _tracker.RecordSecond();
+            EnforceFocusMode();
             CheckLimits();
             _tracker.SaveIfNeeded();
+            UpdateLimitsButton();
             if (IsVisible)
             {
                 if (++_dashboardRefreshTicks >= 5)
@@ -124,14 +129,14 @@ public partial class MainWindow : Window
         var today = DateTime.Now.ToString("yyyy-MM-dd");
         var apps = GetTodayUsage(_tracker.Data.Applications, today);
         var sites = GetTodayUsage(_tracker.Data.Websites, today);
-        var appTotal = apps.Sum(entry => entry.Value);
+        var entertainmentSeconds = _tracker.GetTodayEntertainmentSeconds();
 
-        TotalTimeText.Text = FormatDuration(appTotal);
+        TotalTimeText.Text = FormatDuration(entertainmentSeconds);
         TotalTimeDescription.Text = _tracker.Data.DailyLimitSeconds is int dailyLimit
-            ? appTotal >= dailyLimit
-                ? "Overall daily limit reached"
-                : $"{FormatDuration(dailyLimit - appTotal)} left of today's limit"
-            : "Time across your active apps";
+            ? entertainmentSeconds >= dailyLimit
+                ? "Daily entertainment limit reached"
+                : $"{FormatDuration(dailyLimit - entertainmentSeconds)} left of today's entertainment limit"
+            : "Time from apps and websites on your Focus lists";
         AppCountText.Text = apps.Count.ToString();
         SiteCountText.Text = sites.Count.ToString();
         AppList.ItemsSource = BuildRows(apps, _tracker.Data.ApplicationLimitsSeconds);
@@ -142,10 +147,13 @@ public partial class MainWindow : Window
 
     private void UpdateStatus()
     {
-        if (_tracker.Data.DailyLimitSeconds is int dailyLimit &&
-            _tracker.GetTodayTotalSeconds() >= dailyLimit)
+        if (_tracker.Data.FocusModeEnabled)
         {
-            StatusText.Text = "Overall daily limit reached";
+            StatusText.Text = "Focus mode is on";
+        }
+        else if (_tracker.HasReachedDailyEntertainmentLimit())
+        {
+            StatusText.Text = "Daily entertainment limit reached";
         }
         else if (_tracker.IsIdle)
         {
@@ -181,20 +189,21 @@ public partial class MainWindow : Window
             _limitStateDay = today;
             _notifiedLimits.Clear();
             _closeRequestedProcessIds.Clear();
+            _focusCloseRequestedProcessIds.Clear();
         }
 
         if (_tracker.Data.DailyLimitSeconds is int dailyLimit)
         {
-            var dailyUsage = _tracker.GetTodayTotalSeconds();
-            CheckLimit(
+            var dailyUsage = _tracker.GetTodayEntertainmentSeconds();
+            var limitJustReached = CheckLimit(
                 $"daily:{dailyLimit}",
-                "overall daily screen time",
+                "daily entertainment time",
                 dailyUsage,
                 dailyLimit,
-                closeApp: true);
-            if (dailyUsage >= dailyLimit)
+                closeApp: false);
+            if (limitJustReached)
             {
-                return;
+                CloseOpenFocusApplications();
             }
         }
 
@@ -207,7 +216,8 @@ public partial class MainWindow : Window
                 appName,
                 appUsage,
                 appLimit,
-                closeApp: true);
+                closeApp: true,
+                startDowntime: true);
             if (appUsage >= appLimit)
             {
                 return;
@@ -222,16 +232,28 @@ public partial class MainWindow : Window
                 siteName,
                 _tracker.GetTodaySeconds(_tracker.Data.Websites, siteName),
                 siteLimit,
-                closeApp: false);
+                closeApp: false,
+                startDowntime: true);
         }
     }
 
-    private void CheckLimit(string key, string name, int usedSeconds, int limitSeconds, bool closeApp)
+    private bool CheckLimit(
+        string key,
+        string name,
+        int usedSeconds,
+        int limitSeconds,
+        bool closeApp,
+        bool startDowntime = false)
     {
         var remainingSeconds = limitSeconds - usedSeconds;
         if (remainingSeconds > 0)
         {
-            return;
+            return false;
+        }
+
+        if (startDowntime)
+        {
+            _tracker.StartLimitDowntime(key);
         }
 
         var firstReached = _notifiedLimits.Add($"reached:{key}");
@@ -239,7 +261,9 @@ public partial class MainWindow : Window
         {
             MessageBox.Show(
                 this,
-                $"Your limit for {name} has been reached. It resets at midnight.",
+                startDowntime
+                    ? $"Your limit for {name} has been reached. Limit settings are locked until midnight."
+                    : $"Your limit for {name} has been reached. It resets at midnight.",
                 "Screen Time limit reached",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
@@ -250,7 +274,7 @@ public partial class MainWindow : Window
             _tracker.CurrentProcessId is not int processId ||
             !_closeRequestedProcessIds.Add(processId))
         {
-            return;
+            return firstReached;
         }
 
         if (!_tracker.TryCloseCurrentApp())
@@ -262,6 +286,8 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
         }
+
+        return firstReached;
     }
 
     private void OpenLimits_Click(object sender, RoutedEventArgs e)
@@ -272,6 +298,138 @@ public partial class MainWindow : Window
             _notifiedLimits.Clear();
             UpdateDashboard();
             UpdateStatus();
+            UpdateLimitsButton();
+        }
+    }
+
+    private void OpenWeeklyTrends_Click(object sender, RoutedEventArgs e)
+    {
+        new WeeklyTrendsWindow(_tracker) { Owner = this }.ShowDialog();
+    }
+
+    private void OpenBlockedSites_Click(object sender, RoutedEventArgs e)
+    {
+        new BlockedSitesWindow(_tracker) { Owner = this }.ShowDialog();
+    }
+
+    private void ToggleFocusMode_Click(object sender, RoutedEventArgs e)
+    {
+        var enabled = !_tracker.Data.FocusModeEnabled;
+        try
+        {
+            _tracker.SetFocusModeEnabled(enabled);
+            _focusCloseRequestedProcessIds.Clear();
+            UpdateFocusModeControls();
+            UpdateStatus();
+            if (enabled)
+            {
+                CloseOpenFocusApplications();
+            }
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException)
+        {
+            UpdateFocusModeControls();
+            MessageBox.Show(
+                this,
+                $"Focus mode could not be changed.\n\n{exception.Message}",
+                "Focus Mode",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void OpenFocusSettings_Click(object sender, RoutedEventArgs e)
+    {
+        var settings = new FocusModeSettingsWindow(_tracker) { Owner = this };
+        if (settings.ShowDialog() == true)
+        {
+            _focusCloseRequestedProcessIds.Clear();
+            if (_tracker.Data.FocusModeEnabled || _tracker.HasReachedDailyEntertainmentLimit())
+            {
+                CloseOpenFocusApplications();
+            }
+        }
+    }
+
+    private void UpdateFocusModeControls()
+    {
+        FocusModeButton.Content = _tracker.Data.FocusModeEnabled
+            ? "Turn focus mode off"
+            : "Turn focus mode on";
+        FocusModeDescription.Text = _tracker.Data.FocusModeEnabled
+            ? "Entertainment blockers are active"
+            : "Entertainment blockers are off";
+    }
+
+    private void EnforceFocusMode()
+    {
+        if (_tracker.CurrentApp is not { } appName ||
+            _tracker.CurrentProcessName is not { } processName ||
+            _tracker.CurrentProcessId is not int processId ||
+            !_tracker.ShouldBlockFocusApplication(appName, processName) ||
+            !_focusCloseRequestedProcessIds.Add(processId))
+        {
+            return;
+        }
+
+        if (!_tracker.TryCloseCurrentApp())
+        {
+            var blockingReason = _tracker.Data.FocusModeEnabled
+                ? "Focus Mode"
+                : "the daily entertainment limit";
+            MessageBox.Show(
+                this,
+                $"{blockingReason} could not close {appName}. Please close it manually.",
+                "Could not close app",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void CloseOpenFocusApplications()
+    {
+        var failures = _tracker.CloseRunningFocusApplications(_focusCloseRequestedProcessIds);
+        if (failures.Count > 0)
+        {
+            MessageBox.Show(
+                this,
+                $"Windows could not close these apps. Close them manually; unsaved-work prompts may be open:\n\n{string.Join(Environment.NewLine, failures)}",
+                "Some apps are still open",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+    }
+
+    private void OpenDataTools_Click(object sender, RoutedEventArgs e)
+    {
+        var dataWindow = new DataManagementWindow(_tracker) { Owner = this };
+        if (dataWindow.ShowDialog() == true)
+        {
+            _notifiedLimits.Clear();
+            _closeRequestedProcessIds.Clear();
+            _focusCloseRequestedProcessIds.Clear();
+            UpdateDashboard();
+            UpdateStatus();
+            UpdateLimitsButton();
+            UpdateFocusModeControls();
+        }
+    }
+
+    private void UpdateLimitsButton()
+    {
+        if (_tracker.GetLimitDowntimeRemaining() is TimeSpan remaining)
+        {
+            var secondsRemaining = (int)Math.Ceiling(remaining.TotalSeconds);
+            SetLimitsButton.Content = $"Limits locked · {FormatRemaining(secondsRemaining)}";
+            SetLimitsButton.ToolTip = "Open the lock screen to unlock limits early.";
+            SetLimitsButton.IsEnabled = true;
+        }
+        else
+        {
+            SetLimitsButton.Content = "Set limits";
+            SetLimitsButton.ToolTip = null;
+            SetLimitsButton.IsEnabled = true;
         }
     }
 
@@ -331,6 +489,7 @@ public partial class MainWindow : Window
         Activate();
         UpdateDashboard();
         UpdateStatus();
+        UpdateLimitsButton();
     }
 
     private void ExitApplication()

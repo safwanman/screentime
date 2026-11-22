@@ -3,7 +3,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Text;
 using System.Text.Json;
+using System.Globalization;
 using ScreenTimeTracker.Models;
 
 namespace ScreenTimeTracker.Services;
@@ -11,6 +13,22 @@ namespace ScreenTimeTracker.Services;
 public sealed class UsageTracker
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static readonly Dictionary<string, string[]> FocusAppProcessAliases =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Battle.net"] = ["Battle.net"],
+            ["Epic Games Launcher"] = ["EpicGamesLauncher"],
+            ["Fortnite"] = ["FortniteClient-Win64-Shipping", "Fortnite"],
+            ["Google Chrome"] = ["chrome"],
+            ["League of Legends"] = ["LeagueClientUx", "League of Legends"],
+            ["Microsoft Edge"] = ["msedge"],
+            ["Minecraft Launcher"] = ["MinecraftLauncher"],
+            ["PlayStation"] = ["PlayStation"],
+            ["Riot Client"] = ["RiotClientServices"],
+            ["Roblox Game Client"] = ["RobloxPlayerBeta"],
+            ["VALORANT"] = ["VALORANT-Win64-Shipping", "VALORANT"],
+            ["Xbox"] = ["XboxPcApp"]
+        };
     private static readonly HashSet<string> SystemAppNames = new(StringComparer.OrdinalIgnoreCase)
     {
         "Application Frame Host",
@@ -75,15 +93,202 @@ public sealed class UsageTracker
         Data.Websites ??= [];
         Data.ApplicationLimitsSeconds ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         Data.WebsiteLimitsSeconds ??= new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        Data.BlockedWebsites ??= [];
+        Data.FocusApplications ??= [];
+        Data.FocusWebsites ??= [];
+        Data.LimitDowntimeTriggeredKeys ??= [];
         RemoveSystemAppsFromHistory();
+        UpgradeActiveLimitDowntimeToMidnight();
     }
 
     public UsageData Data { get; }
     public string? CurrentApp { get; private set; }
     public string? CurrentSite { get; private set; }
+    public string? CurrentProcessName { get; private set; }
     public bool IsIdle { get; private set; }
     public bool IsDashboardForeground { get; private set; }
     public int? CurrentProcessId { get; private set; }
+
+    public TimeSpan? GetLimitDowntimeRemaining()
+    {
+        lock (_dataLock)
+        {
+            return GetLimitDowntimeRemainingUnsafe(DateTime.UtcNow);
+        }
+    }
+
+    public void UnlockLimitSettings()
+    {
+        DateTime? previousUntil;
+        lock (_dataLock)
+        {
+            previousUntil = Data.LimitDowntimeUntilUtc;
+            Data.LimitDowntimeUntilUtc = null;
+        }
+
+        try
+        {
+            Save();
+        }
+        catch
+        {
+            lock (_dataLock)
+            {
+                Data.LimitDowntimeUntilUtc = previousUntil;
+            }
+
+            throw;
+        }
+    }
+
+    public void CreateBackup(string path)
+    {
+        string serializedData;
+        lock (_dataLock)
+        {
+            serializedData = JsonSerializer.Serialize(Data, JsonOptions);
+        }
+
+        File.WriteAllText(path, serializedData);
+    }
+
+    public void ExportHistoryCsv(string path)
+    {
+        var csv = new StringBuilder();
+        csv.AppendLine("Date,Category,Name,Seconds");
+
+        lock (_dataLock)
+        {
+            AppendCsvRows(csv, "App", Data.Applications);
+            AppendCsvRows(csv, "Website", Data.Websites);
+        }
+
+        File.WriteAllText(path, csv.ToString(), new UTF8Encoding(true));
+    }
+
+    public void ClearAllData()
+    {
+        Dictionary<string, Dictionary<string, int>> previousApplications;
+        Dictionary<string, Dictionary<string, int>> previousWebsites;
+        int? previousDailyLimit;
+        Dictionary<string, int> previousApplicationLimits;
+        Dictionary<string, int> previousWebsiteLimits;
+        List<string> previousBlockedWebsites;
+        bool previousFocusModeEnabled;
+        List<string> previousFocusApplications;
+        List<string> previousFocusWebsites;
+        DateTime? previousDowntimeUntil;
+        string? previousDowntimeDay;
+        List<string> previousTriggeredKeys;
+
+        lock (_dataLock)
+        {
+            previousApplications = Data.Applications;
+            previousWebsites = Data.Websites;
+            previousDailyLimit = Data.DailyLimitSeconds;
+            previousApplicationLimits = Data.ApplicationLimitsSeconds;
+            previousWebsiteLimits = Data.WebsiteLimitsSeconds;
+            previousBlockedWebsites = Data.BlockedWebsites;
+            previousFocusModeEnabled = Data.FocusModeEnabled;
+            previousFocusApplications = Data.FocusApplications;
+            previousFocusWebsites = Data.FocusWebsites;
+            previousDowntimeUntil = Data.LimitDowntimeUntilUtc;
+            previousDowntimeDay = Data.LimitDowntimeDay;
+            previousTriggeredKeys = Data.LimitDowntimeTriggeredKeys;
+
+            Data.Applications = [];
+            Data.Websites = [];
+            Data.DailyLimitSeconds = null;
+            Data.ApplicationLimitsSeconds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            Data.WebsiteLimitsSeconds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            Data.BlockedWebsites = [];
+            Data.FocusModeEnabled = false;
+            Data.FocusApplications = [];
+            Data.FocusWebsites = [];
+            Data.LimitDowntimeUntilUtc = null;
+            Data.LimitDowntimeDay = null;
+            Data.LimitDowntimeTriggeredKeys = [];
+        }
+
+        try
+        {
+            Save();
+        }
+        catch
+        {
+            lock (_dataLock)
+            {
+                Data.Applications = previousApplications;
+                Data.Websites = previousWebsites;
+                Data.DailyLimitSeconds = previousDailyLimit;
+                Data.ApplicationLimitsSeconds = previousApplicationLimits;
+                Data.WebsiteLimitsSeconds = previousWebsiteLimits;
+                Data.BlockedWebsites = previousBlockedWebsites;
+                Data.FocusModeEnabled = previousFocusModeEnabled;
+                Data.FocusApplications = previousFocusApplications;
+                Data.FocusWebsites = previousFocusWebsites;
+                Data.LimitDowntimeUntilUtc = previousDowntimeUntil;
+                Data.LimitDowntimeDay = previousDowntimeDay;
+                Data.LimitDowntimeTriggeredKeys = previousTriggeredKeys;
+            }
+
+            throw;
+        }
+    }
+
+    public void StartLimitDowntime(string limitKey)
+    {
+        var today = DateTime.Now.ToString("yyyy-MM-dd");
+        var normalizedKey = limitKey.ToLowerInvariant();
+        var until = DateTime.Today.AddDays(1).ToUniversalTime();
+        DateTime? previousUntil;
+        string? previousDay;
+        List<string> previousTriggeredKeys;
+
+        lock (_dataLock)
+        {
+            previousUntil = Data.LimitDowntimeUntilUtc;
+            previousDay = Data.LimitDowntimeDay;
+            previousTriggeredKeys = [.. Data.LimitDowntimeTriggeredKeys];
+
+            if (!string.Equals(Data.LimitDowntimeDay, today, StringComparison.Ordinal))
+            {
+                Data.LimitDowntimeDay = today;
+                Data.LimitDowntimeTriggeredKeys.Clear();
+            }
+
+            var wasAlreadyTriggered = Data.LimitDowntimeTriggeredKeys.Contains(
+                normalizedKey,
+                StringComparer.Ordinal);
+            if (!wasAlreadyTriggered)
+            {
+                Data.LimitDowntimeTriggeredKeys.Add(normalizedKey);
+            }
+
+            if (wasAlreadyTriggered)
+            {
+                return;
+            }
+
+            Data.LimitDowntimeUntilUtc = until;
+        }
+
+        try
+        {
+            Save();
+        }
+        catch
+        {
+            lock (_dataLock)
+            {
+                Data.LimitDowntimeUntilUtc = previousUntil;
+                Data.LimitDowntimeDay = previousDay;
+                Data.LimitDowntimeTriggeredKeys = previousTriggeredKeys;
+            }
+
+            throw;
+        }
+    }
 
     public void UpdateActiveSite(string host, DateTime receivedAtUtc)
     {
@@ -100,6 +305,7 @@ public sealed class UsageTracker
         IsDashboardForeground = false;
         CurrentSite = null;
         CurrentProcessId = null;
+        CurrentProcessName = null;
 
         if (IsIdle)
         {
@@ -156,6 +362,7 @@ public sealed class UsageTracker
                 }
 
                 CurrentProcessId = processId;
+                CurrentProcessName = processName;
                 var appName = _cachedForegroundAppName;
                 CurrentApp = appName;
 
@@ -183,12 +390,14 @@ public sealed class UsageTracker
             CurrentApp = null;
             CurrentSite = null;
             CurrentProcessId = null;
+            CurrentProcessName = null;
         }
         catch (Win32Exception)
         {
             CurrentApp = null;
             CurrentSite = null;
             CurrentProcessId = null;
+            CurrentProcessName = null;
         }
     }
 
@@ -200,6 +409,38 @@ public sealed class UsageTracker
             return Data.Applications.TryGetValue(today, out var dailyUsage)
                 ? dailyUsage.Values.Sum()
                 : 0;
+        }
+    }
+
+    public int GetTodayEntertainmentSeconds()
+    {
+        lock (_dataLock)
+        {
+            return GetTodayEntertainmentSecondsUnsafe();
+        }
+    }
+
+    public bool HasReachedDailyEntertainmentLimit()
+    {
+        lock (_dataLock)
+        {
+            return Data.DailyLimitSeconds is int limit &&
+                GetTodayEntertainmentSecondsUnsafe() >= limit;
+        }
+    }
+
+    public bool ShouldBlockFocusApplication(string appName, string processName)
+    {
+        lock (_dataLock)
+        {
+            if (!IsFocusApplicationUnsafe(appName, processName))
+            {
+                return false;
+            }
+
+            return Data.FocusModeEnabled ||
+                (Data.DailyLimitSeconds is int limit &&
+                 GetTodayEntertainmentSecondsUnsafe() >= limit);
         }
     }
 
@@ -226,17 +467,223 @@ public sealed class UsageTracker
 
     public string? GetSiteBlockReason(string host)
     {
+        return GetSiteBlockReason(host, isShortForm: false);
+    }
+
+    public string? GetSiteBlockReason(string host, bool isShortForm)
+    {
         lock (_dataLock)
         {
-            if (Data.DailyLimitSeconds is int dailyLimit && GetTodayTotalSeconds() >= dailyLimit)
+            if (IsWebsiteBlocked(host))
             {
-                return "daily";
+                return "blocked";
+            }
+
+            if (isShortForm || IsDomainOrSubdomain(host, "tiktok.com"))
+            {
+                return "short-form";
+            }
+
+            var isFocusWebsite = IsFocusWebsiteUnsafe(host);
+            if (Data.FocusModeEnabled && isFocusWebsite)
+            {
+                return "focus";
+            }
+
+            if (isFocusWebsite &&
+                Data.DailyLimitSeconds is int dailyLimit &&
+                GetTodayEntertainmentSecondsUnsafe() >= dailyLimit)
+            {
+                return "daily-entertainment";
             }
 
             var siteLimit = GetLimitSeconds(Data.WebsiteLimitsSeconds, host);
             return siteLimit is int limit && GetTodaySeconds(Data.Websites, host) >= limit
                 ? "website"
                 : null;
+        }
+    }
+
+    public void SetFocusModeEnabled(bool enabled)
+    {
+        bool previousValue;
+        lock (_dataLock)
+        {
+            previousValue = Data.FocusModeEnabled;
+            Data.FocusModeEnabled = enabled;
+        }
+
+        try
+        {
+            Save();
+        }
+        catch
+        {
+            lock (_dataLock)
+            {
+                Data.FocusModeEnabled = previousValue;
+            }
+
+            throw;
+        }
+    }
+
+    public void UpdateFocusBlocklists(
+        IEnumerable<string> applications,
+        IEnumerable<string> websites)
+    {
+        var normalizedApplications = applications
+            .Select(NormalizeFocusApplication)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var normalizedWebsites = websites
+            .Select(NormalizeBlockedWebsite)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(host => host, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        List<string> previousApplications;
+        List<string> previousWebsites;
+
+        lock (_dataLock)
+        {
+            previousApplications = Data.FocusApplications;
+            previousWebsites = Data.FocusWebsites;
+            Data.FocusApplications = normalizedApplications;
+            Data.FocusWebsites = normalizedWebsites;
+        }
+
+        try
+        {
+            Save();
+        }
+        catch
+        {
+            lock (_dataLock)
+            {
+                Data.FocusApplications = previousApplications;
+                Data.FocusWebsites = previousWebsites;
+            }
+
+            throw;
+        }
+    }
+
+    public bool IsFocusApplication(string appName, string processName)
+    {
+        lock (_dataLock)
+        {
+            return IsFocusApplicationUnsafe(appName, processName);
+        }
+    }
+
+    public IReadOnlyList<string> CloseRunningFocusApplications(ISet<int> requestedProcessIds)
+    {
+        var failures = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var currentProcessName = Path.GetFileNameWithoutExtension(Environment.ProcessPath);
+
+        foreach (var process in Process.GetProcesses())
+        {
+            string? appName = null;
+            try
+            {
+                var processName = process.ProcessName;
+                if (string.Equals(processName, currentProcessName, StringComparison.OrdinalIgnoreCase) ||
+                    !IsUserApplication(process))
+                {
+                    continue;
+                }
+
+                appName = GetAppName(process, processName);
+                if (!IsFocusApplication(appName, processName) ||
+                    !requestedProcessIds.Add(process.Id))
+                {
+                    continue;
+                }
+
+                if (!process.CloseMainWindow())
+                {
+                    failures.Add(appName);
+                }
+            }
+            catch (Win32Exception)
+            {
+                if (appName is not null)
+                {
+                    failures.Add(appName);
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                if (appName is not null)
+                {
+                    failures.Add(appName);
+                }
+            }
+            catch (NotSupportedException)
+            {
+                if (appName is not null)
+                {
+                    failures.Add(appName);
+                }
+            }
+            catch (SecurityException)
+            {
+                if (appName is not null)
+                {
+                    failures.Add(appName);
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                if (appName is not null)
+                {
+                    failures.Add(appName);
+                }
+            }
+            catch (ArgumentException)
+            {
+                if (appName is not null)
+                {
+                    failures.Add(appName);
+                }
+            }
+            finally
+            {
+                process.Dispose();
+            }
+        }
+
+        return failures.OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToArray();
+    }
+
+    public void UpdateBlockedWebsites(IEnumerable<string> blockedWebsites)
+    {
+        var normalizedWebsites = blockedWebsites
+            .Select(NormalizeBlockedWebsite)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(host => host, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        List<string> previousWebsites;
+
+        lock (_dataLock)
+        {
+            previousWebsites = Data.BlockedWebsites;
+            Data.BlockedWebsites = normalizedWebsites;
+        }
+
+        try
+        {
+            Save();
+        }
+        catch
+        {
+            lock (_dataLock)
+            {
+                Data.BlockedWebsites = previousWebsites;
+            }
+
+            throw;
         }
     }
 
@@ -250,6 +697,12 @@ public sealed class UsageTracker
         Dictionary<string, int> previousWebsiteLimits;
         lock (_dataLock)
         {
+            if (GetLimitDowntimeRemainingUnsafe(DateTime.UtcNow) is TimeSpan remaining)
+            {
+                throw new InvalidOperationException(
+                    $"Limits are locked for {Math.Ceiling(remaining.TotalMinutes)} more minute(s).");
+            }
+
             previousDailyLimit = Data.DailyLimitSeconds;
             previousApplicationLimits = Data.ApplicationLimitsSeconds;
             previousWebsiteLimits = Data.WebsiteLimitsSeconds;
@@ -479,6 +932,208 @@ public sealed class UsageTracker
 
         dailyUsage.TryGetValue(name, out var seconds);
         dailyUsage[name] = seconds + 1;
+    }
+
+    private static void AppendCsvRows(
+        StringBuilder csv,
+        string category,
+        Dictionary<string, Dictionary<string, int>> usage)
+    {
+        foreach (var day in usage.OrderBy(entry => entry.Key, StringComparer.Ordinal))
+        {
+            foreach (var item in day.Value.OrderBy(entry => entry.Key, StringComparer.OrdinalIgnoreCase))
+            {
+                csv.Append(QuoteCsv(day.Key))
+                    .Append(',')
+                    .Append(QuoteCsv(category))
+                    .Append(',')
+                    .Append(QuoteCsv(item.Key))
+                    .Append(',')
+                    .AppendLine(item.Value.ToString(CultureInfo.InvariantCulture));
+            }
+        }
+    }
+
+    private static string QuoteCsv(string value)
+    {
+        return $"\"{value.Replace("\"", "\"\"")}\"";
+    }
+
+    private bool IsWebsiteBlocked(string host)
+    {
+        return Data.BlockedWebsites.Any(blockedWebsite =>
+            IsDomainOrSubdomain(host, blockedWebsite));
+    }
+
+    private int GetTodayEntertainmentSecondsUnsafe()
+    {
+        var today = DateTime.Now.ToString("yyyy-MM-dd");
+        var appSeconds = 0;
+        var edgeSeconds = 0;
+        var websiteSeconds = 0;
+        var trackedWebsiteSeconds = 0;
+
+        if (Data.Applications.TryGetValue(today, out var dailyApps))
+        {
+            foreach (var app in dailyApps)
+            {
+                if (!Data.FocusApplications.Any(focusApp =>
+                        IsFocusApplicationIdentifierMatch(focusApp, app.Key, app.Key)))
+                {
+                    continue;
+                }
+
+                appSeconds += app.Value;
+                if (string.Equals(app.Key, "Microsoft Edge", StringComparison.OrdinalIgnoreCase))
+                {
+                    edgeSeconds += app.Value;
+                }
+            }
+        }
+
+        if (Data.Websites.TryGetValue(today, out var dailyWebsites))
+        {
+            foreach (var website in dailyWebsites)
+            {
+                trackedWebsiteSeconds += website.Value;
+                if (IsFocusWebsiteUnsafe(website.Key))
+                {
+                    websiteSeconds += website.Value;
+                }
+            }
+        }
+
+        var edgeTimeWithoutTrackedWebsites = appSeconds - Math.Min(edgeSeconds, trackedWebsiteSeconds);
+        return edgeTimeWithoutTrackedWebsites + websiteSeconds;
+    }
+
+    private bool IsFocusApplicationUnsafe(string appName, string processName)
+    {
+        return Data.FocusApplications.Any(blockedApp =>
+            IsFocusApplicationIdentifierMatch(blockedApp, appName, processName));
+    }
+
+    private static bool IsFocusApplicationIdentifierMatch(
+        string blockedApp,
+        string appName,
+        string processName)
+    {
+        var normalizedBlockedApp = NormalizeFocusApplicationIdentifier(blockedApp);
+        var normalizedAppName = NormalizeFocusApplicationIdentifier(appName);
+        var normalizedProcessName = NormalizeFocusApplicationIdentifier(processName);
+        if (string.Equals(normalizedBlockedApp, normalizedAppName, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(normalizedBlockedApp, normalizedProcessName, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (FocusAppProcessAliases.TryGetValue(blockedApp, out var aliases) &&
+            aliases.Any(alias =>
+                string.Equals(alias, normalizedProcessName, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(alias, normalizedAppName, StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        return FocusAppProcessAliases.Any(aliasGroup =>
+            aliasGroup.Value.Any(alias =>
+                string.Equals(alias, normalizedBlockedApp, StringComparison.OrdinalIgnoreCase)) &&
+            (string.Equals(aliasGroup.Key, normalizedAppName, StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(aliasGroup.Key, normalizedProcessName, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private bool IsFocusWebsiteUnsafe(string host)
+    {
+        return Data.FocusWebsites.Any(domain => IsDomainOrSubdomain(host, domain));
+    }
+
+    private static bool IsDomainOrSubdomain(string host, string domain)
+    {
+        return string.Equals(host, domain, StringComparison.OrdinalIgnoreCase) ||
+            host.EndsWith($".{domain}", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string NormalizeBlockedWebsite(string host)
+    {
+        var normalizedHost = host.Trim().TrimEnd('.').ToLowerInvariant();
+        if (normalizedHost.StartsWith("www.", StringComparison.Ordinal))
+        {
+            normalizedHost = normalizedHost[4..];
+        }
+
+        if (normalizedHost.Contains('/') ||
+            normalizedHost.Contains(':') ||
+            Uri.CheckHostName(normalizedHost) == UriHostNameType.Unknown)
+        {
+            throw new ArgumentException(
+                $"'{host}' is not a valid website domain.",
+                nameof(host));
+        }
+
+        return normalizedHost;
+    }
+
+    private static string NormalizeFocusApplication(string appName)
+    {
+        var normalizedName = NormalizeFocusApplicationIdentifier(appName);
+        if (normalizedName.Length == 0 ||
+            normalizedName.Length > 128 ||
+            normalizedName.Contains('/') ||
+            normalizedName.Contains('\\'))
+        {
+            throw new ArgumentException(
+                $"'{appName}' is not a valid application name or process name.",
+                nameof(appName));
+        }
+
+        return normalizedName;
+    }
+
+    private static string NormalizeFocusApplicationIdentifier(string name)
+    {
+        var normalizedName = name.Trim();
+        return normalizedName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+            ? normalizedName[..^4]
+            : normalizedName;
+    }
+
+    private TimeSpan? GetLimitDowntimeRemainingUnsafe(DateTime nowUtc)
+    {
+        if (!string.Equals(
+                Data.LimitDowntimeDay,
+                DateTime.Now.ToString("yyyy-MM-dd"),
+                StringComparison.Ordinal) ||
+            Data.LimitDowntimeUntilUtc is not DateTime untilUtc)
+        {
+            return null;
+        }
+
+        var remaining = untilUtc - nowUtc;
+        return remaining > TimeSpan.Zero ? remaining : null;
+    }
+
+    private void UpgradeActiveLimitDowntimeToMidnight()
+    {
+        var today = DateTime.Now.ToString("yyyy-MM-dd");
+        var untilMidnightUtc = DateTime.Today.AddDays(1).ToUniversalTime();
+        var changed = false;
+
+        lock (_dataLock)
+        {
+            if (string.Equals(Data.LimitDowntimeDay, today, StringComparison.Ordinal) &&
+                Data.LimitDowntimeUntilUtc is DateTime untilUtc &&
+                untilUtc > DateTime.UtcNow &&
+                untilUtc < untilMidnightUtc)
+            {
+                Data.LimitDowntimeUntilUtc = untilMidnightUtc;
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            Save();
+        }
     }
 
     private static bool IsUserIdle()

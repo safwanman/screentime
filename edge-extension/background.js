@@ -1,12 +1,19 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message?.type !== "active-site" || typeof message.host !== "string" || !sender.tab) {
+  if (message?.type !== "active-site" ||
+      typeof message.host !== "string" ||
+      typeof message.shortForm !== "boolean" ||
+      !sender.tab) {
     return false;
   }
 
   fetch("http://127.0.0.1:43183/site", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ host: message.host, timestamp: Date.now() })
+    body: JSON.stringify({
+      host: message.host,
+      timestamp: Date.now(),
+      shortForm: message.shortForm
+    })
   })
     .then((response) => {
       if (!response.ok) {

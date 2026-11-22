@@ -5,6 +5,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using ScreenTimeTracker.Models;
 using ScreenTimeTracker.Services;
 
@@ -20,6 +21,7 @@ public partial class LimitsWindow : Window
 {
     private readonly UsageTracker _tracker;
     private readonly ObservableCollection<LimitEntry> _entries = [];
+    private readonly DispatcherTimer _cooldownTimer;
 
     public LimitsWindow(UsageTracker tracker)
     {
@@ -37,6 +39,12 @@ public partial class LimitsWindow : Window
         AddEntries("App", _tracker.Data.ApplicationLimitsSeconds);
         AddEntries("Website", _tracker.Data.WebsiteLimitsSeconds);
         UpdateEmptyState();
+
+        _cooldownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _cooldownTimer.Tick += (_, _) => UpdateCooldownState();
+        Closed += (_, _) => _cooldownTimer.Stop();
+        UpdateCooldownState();
+        _cooldownTimer.Start();
     }
 
     private void AddEntries(string type, Dictionary<string, int> limits)
@@ -139,7 +147,7 @@ public partial class LimitsWindow : Window
                     DailySecondsInput.Text,
                     out var dailySeconds))
             {
-                ShowValidationError("The overall daily limit must be greater than zero, up to 24 hours. Hours, minutes, and seconds must be numeric; minutes and seconds must be 0–59.");
+                ShowValidationError("The daily entertainment limit must be greater than zero, up to 24 hours. Hours, minutes, and seconds must be numeric; minutes and seconds must be 0–59.");
                 return;
             }
 
@@ -164,6 +172,12 @@ public partial class LimitsWindow : Window
         {
             _tracker.UpdateLimits(dailyLimit, applicationLimits, websiteLimits);
         }
+        catch (InvalidOperationException exception)
+        {
+            UpdateCooldownState();
+            ShowValidationError(exception.Message);
+            return;
+        }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             MessageBox.Show(
@@ -176,6 +190,60 @@ public partial class LimitsWindow : Window
         }
 
         DialogResult = true;
+    }
+
+    private void UpdateCooldownState()
+    {
+        if (_tracker.GetLimitDowntimeRemaining() is TimeSpan remaining)
+        {
+            var totalSeconds = (int)Math.Ceiling(remaining.TotalSeconds);
+            var hours = totalSeconds / 3600;
+            var minutes = totalSeconds % 3600 / 60;
+            var seconds = totalSeconds % 60;
+            var remainingText = hours > 0
+                ? $"{hours}h {minutes:D2}m {seconds:D2}s"
+                : $"{minutes}m {seconds:D2}s";
+
+            CooldownText.Text = $"Limit changes are locked until midnight. Time remaining: {remainingText}.";
+            CooldownOverlay.Visibility = Visibility.Visible;
+            SaveLimitsButton.IsEnabled = false;
+        }
+        else
+        {
+            CooldownOverlay.Visibility = Visibility.Collapsed;
+            SaveLimitsButton.IsEnabled = true;
+        }
+    }
+
+    private void UnlockLimits_Click(object sender, RoutedEventArgs e)
+    {
+        var result = MessageBox.Show(
+            this,
+            "Unlock the limit editor now? The limit that was reached will still be enforced, but you can change or remove it.",
+            "Unlock limits early?",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question,
+            MessageBoxResult.No);
+        if (result != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            _tracker.UnlockLimitSettings();
+            UpdateCooldownState();
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show(
+                this,
+                $"The limits could not be unlocked.\n\n{exception.Message}",
+                "Unlock failed",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e)
