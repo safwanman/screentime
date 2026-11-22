@@ -3,6 +3,12 @@ using System.ComponentModel;
 using System.IO;
 using System.Net;
 using System.Windows;
+using System.Windows.Controls;
+using Button = System.Windows.Controls.Button;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using MediaBrush = System.Windows.Media.Brush;
+using MediaBrushes = System.Windows.Media.Brushes;
 using System.Windows.Threading;
 using ScreenTimeTracker.Models;
 using ScreenTimeTracker.Services;
@@ -20,19 +26,38 @@ public partial class MainWindow : Window
     private readonly UsageTracker _tracker;
     private readonly EdgeBridge _edgeBridge;
     private readonly DispatcherTimer _timer;
+    private readonly LimitsView _limitsView;
+    private readonly FocusListsView _focusListsView;
+    private readonly BlockedSitesView _blockedSitesView;
+    private readonly WeeklyTrendsView _weeklyTrendsView;
+    private readonly DataToolsView _dataToolsView;
+    private readonly SettingsView _settingsView;
+    private readonly Button[] _navigationButtons;
     private readonly System.Windows.Forms.NotifyIcon _trayIcon;
     private readonly System.Windows.Forms.ToolStripMenuItem _startupMenuItem;
     private readonly HashSet<string> _notifiedLimits = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<int> _closeRequestedProcessIds = [];
     private readonly HashSet<int> _focusCloseRequestedProcessIds = [];
     private int _dashboardRefreshTicks;
+    private int _currentSectionIndex;
     private bool _exitRequested;
+    private bool _viewsInitialized;
     private string? _limitStateDay;
     private string? _bridgeError;
 
     public MainWindow(bool startInBackground = false)
     {
         InitializeComponent();
+        _navigationButtons =
+        [
+            DashboardNavigationButton,
+            LimitsNavigationButton,
+            FocusListsNavigationButton,
+            BlockedSitesNavigationButton,
+            WeeklyTrendsNavigationButton,
+            DataToolsNavigationButton,
+            SettingsNavigationButton
+        ];
 
         if (startInBackground)
         {
@@ -63,6 +88,51 @@ public partial class MainWindow : Window
         _trayIcon.DoubleClick += (_, _) => ShowDashboard();
 
         _tracker = new UsageTracker();
+        _limitsView = new LimitsView(_tracker);
+        _limitsView.LimitsSaved += (_, _) =>
+        {
+            _notifiedLimits.Clear();
+            UpdateDashboard();
+            UpdateStatus();
+        };
+
+        _focusListsView = new FocusListsView(_tracker);
+        _focusListsView.SettingsSaved += (_, _) =>
+        {
+            _focusCloseRequestedProcessIds.Clear();
+            UpdateDashboard();
+            if (_tracker.Data.FocusModeEnabled || _tracker.HasReachedDailyEntertainmentLimit())
+            {
+                CloseOpenFocusApplications();
+            }
+        };
+
+        _blockedSitesView = new BlockedSitesView(_tracker);
+        _blockedSitesView.SettingsSaved += (_, _) => UpdateStatus();
+
+        _weeklyTrendsView = new WeeklyTrendsView(_tracker);
+        _settingsView = new SettingsView(_tracker);
+        _settingsView.ThemeChanged += (_, _) => ApplyTheme(_tracker.Data.DarkModeEnabled);
+
+        _dataToolsView = new DataToolsView(_tracker);
+        _dataToolsView.DataCleared += (_, _) =>
+        {
+            _notifiedLimits.Clear();
+            _closeRequestedProcessIds.Clear();
+            _focusCloseRequestedProcessIds.Clear();
+            _limitsView.ReloadFromTracker();
+            _focusListsView.ReloadFromTracker();
+            _blockedSitesView.ReloadFromTracker();
+            UpdateDashboard();
+            UpdateStatus();
+            UpdateFocusModeControls();
+            _settingsView.Refresh();
+            ApplyTheme(_tracker.Data.DarkModeEnabled);
+        };
+
+        _viewsInitialized = true;
+        ApplyTheme(_tracker.Data.DarkModeEnabled);
+        NavigateToSection(0);
         _edgeBridge = new EdgeBridge(_tracker);
         _edgeBridge.ListenerFailed += exception =>
         {
@@ -84,7 +154,6 @@ public partial class MainWindow : Window
 
         UpdateDashboard();
         UpdateStatus();
-        UpdateLimitsButton();
         UpdateFocusModeControls();
         _timer.Start();
         Closed += OnClosed;
@@ -101,7 +170,6 @@ public partial class MainWindow : Window
             EnforceFocusMode();
             CheckLimits();
             _tracker.SaveIfNeeded();
-            UpdateLimitsButton();
             if (IsVisible)
             {
                 if (++_dashboardRefreshTicks >= 5)
@@ -290,28 +358,6 @@ public partial class MainWindow : Window
         return firstReached;
     }
 
-    private void OpenLimits_Click(object sender, RoutedEventArgs e)
-    {
-        var limitsWindow = new LimitsWindow(_tracker) { Owner = this };
-        if (limitsWindow.ShowDialog() == true)
-        {
-            _notifiedLimits.Clear();
-            UpdateDashboard();
-            UpdateStatus();
-            UpdateLimitsButton();
-        }
-    }
-
-    private void OpenWeeklyTrends_Click(object sender, RoutedEventArgs e)
-    {
-        new WeeklyTrendsWindow(_tracker) { Owner = this }.ShowDialog();
-    }
-
-    private void OpenBlockedSites_Click(object sender, RoutedEventArgs e)
-    {
-        new BlockedSitesWindow(_tracker) { Owner = this }.ShowDialog();
-    }
-
     private void ToggleFocusMode_Click(object sender, RoutedEventArgs e)
     {
         var enabled = !_tracker.Data.FocusModeEnabled;
@@ -339,27 +385,11 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OpenFocusSettings_Click(object sender, RoutedEventArgs e)
-    {
-        var settings = new FocusModeSettingsWindow(_tracker) { Owner = this };
-        if (settings.ShowDialog() == true)
-        {
-            _focusCloseRequestedProcessIds.Clear();
-            if (_tracker.Data.FocusModeEnabled || _tracker.HasReachedDailyEntertainmentLimit())
-            {
-                CloseOpenFocusApplications();
-            }
-        }
-    }
-
     private void UpdateFocusModeControls()
     {
         FocusModeButton.Content = _tracker.Data.FocusModeEnabled
             ? "Turn focus mode off"
             : "Turn focus mode on";
-        FocusModeDescription.Text = _tracker.Data.FocusModeEnabled
-            ? "Entertainment blockers are active"
-            : "Entertainment blockers are off";
     }
 
     private void EnforceFocusMode()
@@ -401,36 +431,177 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OpenDataTools_Click(object sender, RoutedEventArgs e)
+    private void OpenNavigation_Click(object sender, RoutedEventArgs e)
     {
-        var dataWindow = new DataManagementWindow(_tracker) { Owner = this };
-        if (dataWindow.ShowDialog() == true)
+        if (NavigationOverlay.Visibility == Visibility.Visible)
         {
-            _notifiedLimits.Clear();
-            _closeRequestedProcessIds.Clear();
-            _focusCloseRequestedProcessIds.Clear();
-            UpdateDashboard();
-            UpdateStatus();
-            UpdateLimitsButton();
-            UpdateFocusModeControls();
+            CloseNavigation();
+            return;
+        }
+
+        NavigationOverlay.Visibility = Visibility.Visible;
+        NavigationDrawerTransform.BeginAnimation(
+            TranslateTransform.XProperty,
+            new DoubleAnimation(-298, 0, TimeSpan.FromMilliseconds(180))
+            {
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            });
+        NavigationScrim.BeginAnimation(
+            UIElement.OpacityProperty,
+            new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180)));
+    }
+
+    private void CloseNavigation_Click(object sender, RoutedEventArgs e)
+    {
+        CloseNavigation();
+    }
+
+    private void NavigationScrim_MouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        CloseNavigation();
+    }
+
+    private void NavigationItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: string sectionName })
+        {
+            var selectedIndex = sectionName switch
+            {
+                "Dashboard" => 0,
+                "Limits" => 1,
+                "Focus lists" => 2,
+                "Blocked sites" => 3,
+                "Weekly trends" => 4,
+                "Data tools" => 5,
+                "Settings" => 6,
+                _ => -1
+            };
+
+            if (selectedIndex >= 0)
+            {
+                NavigateToSection(selectedIndex);
+            }
+        }
+
+        CloseNavigation();
+    }
+
+    private void NavigateToSection(int selectedIndex)
+    {
+        if (!_viewsInitialized)
+        {
+            return;
+        }
+
+        _currentSectionIndex = selectedIndex;
+        var isDashboard = selectedIndex == 0;
+        DashboardContent.Visibility = isDashboard ? Visibility.Visible : Visibility.Collapsed;
+        PageContent.Visibility = isDashboard ? Visibility.Collapsed : Visibility.Visible;
+        PageContent.Content = selectedIndex switch
+        {
+            1 => _limitsView,
+            2 => _focusListsView,
+            3 => _blockedSitesView,
+            4 => _weeklyTrendsView,
+            5 => _dataToolsView,
+            6 => _settingsView,
+            _ => null
+        };
+
+        if (selectedIndex == 4)
+        {
+            _weeklyTrendsView.Refresh();
+        }
+
+        if (selectedIndex == 6)
+        {
+            _settingsView.Refresh();
+        }
+
+        UpdateNavigationSelection();
+    }
+
+    private void UpdateNavigationSelection()
+    {
+        for (var index = 0; index < _navigationButtons.Length; index++)
+        {
+            var isSelected = index == _currentSectionIndex;
+            _navigationButtons[index].Background = isSelected
+                ? (MediaBrush)FindResource("Theme.AccentSurface")
+                : MediaBrushes.Transparent;
+            _navigationButtons[index].Foreground = isSelected
+                ? (MediaBrush)FindResource("Theme.Accent")
+                : (MediaBrush)FindResource("Theme.MutedStrong");
+            _navigationButtons[index].FontWeight = isSelected
+                ? FontWeights.SemiBold
+                : FontWeights.Medium;
         }
     }
 
-    private void UpdateLimitsButton()
+    private void ApplyTheme(bool darkMode)
     {
-        if (_tracker.GetLimitDowntimeRemaining() is TimeSpan remaining)
+        SetThemeBrush("Theme.Background", darkMode ? "#151821" : "#F7F8FA");
+        SetThemeBrush("Theme.Surface", darkMode ? "#20242D" : "#FFFFFF");
+        SetThemeBrush("Theme.SurfaceAlt", darkMode ? "#262B35" : "#F8F9FC");
+        SetThemeBrush("Theme.Input", darkMode ? "#1C212B" : "#FAFBFD");
+        SetThemeBrush("Theme.Text", darkMode ? "#F2F4F8" : "#182230");
+        SetThemeBrush("Theme.Muted", darkMode ? "#A5AEC0" : "#7B8798");
+        SetThemeBrush("Theme.MutedStrong", darkMode ? "#BAC2D0" : "#657184");
+        SetThemeBrush("Theme.Subtle", darkMode ? "#8E98AA" : "#8994A5");
+        SetThemeBrush("Theme.Border", darkMode ? "#343B49" : "#EDF0F4");
+        SetThemeBrush("Theme.BorderStrong", darkMode ? "#454D5C" : "#E7EAF1");
+        SetThemeBrush("Theme.InputBorder", darkMode ? "#485163" : "#DDE3ED");
+        SetThemeBrush("Theme.Accent", darkMode ? "#8895FF" : "#5B6CE1");
+        SetThemeBrush("Theme.AccentText", darkMode ? "#AEB7FF" : "#5969D5");
+        SetThemeBrush("Theme.AccentSurface", darkMode ? "#30364F" : "#ECEEFF");
+        SetThemeBrush("Theme.AccentBorder", darkMode ? "#4A5178" : "#E0E4FF");
+        SetThemeBrush("Theme.ProgressBackground", darkMode ? "#3A4150" : "#EEF1F6");
+        SetThemeBrush("Theme.Progress", darkMode ? "#8A96FF" : "#6475E5");
+        SetThemeBrush("Theme.Danger", darkMode ? "#F08B8B" : "#A34848");
+        SetThemeBrush("Theme.Good", "#73D6B0");
+        SetThemeBrush("Theme.Website", darkMode ? "#70CDB4" : "#54B69B");
+        SetThemeBrush("Theme.Separator", darkMode ? "#343B49" : "#E5E9EF");
+        SetThemeBrush("Theme.ButtonSurface", darkMode ? "#303642" : "#F0F2F7");
+        SetThemeBrush("Theme.Slate", darkMode ? "#D6DCE6" : "#35415E");
+        SetThemeBrush("Theme.OnAccent", darkMode ? "#151821" : "#FFFFFF");
+        SetThemeBrush("Theme.Overlay", darkMode ? "#B3000000" : "#660D1424");
+        SetThemeBrush("Theme.LockOverlay", darkMode ? "#CC151821" : "#CCF4F6FA");
+        UpdateNavigationSelection();
+    }
+
+    private static void SetThemeBrush(string key, string hexColor)
+    {
+        var offset = hexColor.Length == 9 ? 3 : 1;
+        var alpha = hexColor.Length == 9
+            ? Convert.ToByte(hexColor.Substring(1, 2), 16)
+            : byte.MaxValue;
+        var red = Convert.ToByte(hexColor.Substring(offset, 2), 16);
+        var green = Convert.ToByte(hexColor.Substring(offset + 2, 2), 16);
+        var blue = Convert.ToByte(hexColor.Substring(offset + 4, 2), 16);
+        Application.Current.Resources[key] = new System.Windows.Media.SolidColorBrush(
+            System.Windows.Media.Color.FromArgb(alpha, red, green, blue));
+    }
+
+    private void CloseNavigation()
+    {
+        if (NavigationOverlay.Visibility != Visibility.Visible)
         {
-            var secondsRemaining = (int)Math.Ceiling(remaining.TotalSeconds);
-            SetLimitsButton.Content = $"Limits locked · {FormatRemaining(secondsRemaining)}";
-            SetLimitsButton.ToolTip = "Open the lock screen to unlock limits early.";
-            SetLimitsButton.IsEnabled = true;
+            return;
         }
-        else
+
+        var duration = TimeSpan.FromMilliseconds(150);
+        var drawerAnimation = new DoubleAnimation(
+            NavigationDrawerTransform.X,
+            -298,
+            duration)
         {
-            SetLimitsButton.Content = "Set limits";
-            SetLimitsButton.ToolTip = null;
-            SetLimitsButton.IsEnabled = true;
-        }
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        drawerAnimation.Completed += (_, _) => NavigationOverlay.Visibility = Visibility.Collapsed;
+        NavigationDrawerTransform.BeginAnimation(TranslateTransform.XProperty, drawerAnimation);
+        NavigationScrim.BeginAnimation(
+            UIElement.OpacityProperty,
+            new DoubleAnimation(NavigationScrim.Opacity, 0, duration));
     }
 
     private void OnStartupMenuItemClick(object? sender, EventArgs e)
@@ -487,9 +658,10 @@ public partial class MainWindow : Window
 
         WindowState = WindowState.Normal;
         Activate();
+        NavigateToSection(0);
+        CloseNavigation();
         UpdateDashboard();
         UpdateStatus();
-        UpdateLimitsButton();
     }
 
     private void ExitApplication()

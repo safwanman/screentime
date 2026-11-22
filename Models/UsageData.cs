@@ -20,6 +20,8 @@ public sealed class UsageData
 
     public bool FocusModeEnabled { get; set; }
 
+    public bool DarkModeEnabled { get; set; }
+
     public List<string> FocusApplications { get; set; } =
     [
         "Battle.net",

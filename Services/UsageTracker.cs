@@ -175,6 +175,7 @@ public sealed class UsageTracker
         Dictionary<string, int> previousWebsiteLimits;
         List<string> previousBlockedWebsites;
         bool previousFocusModeEnabled;
+        bool previousDarkModeEnabled;
         List<string> previousFocusApplications;
         List<string> previousFocusWebsites;
         DateTime? previousDowntimeUntil;
@@ -190,6 +191,7 @@ public sealed class UsageTracker
             previousWebsiteLimits = Data.WebsiteLimitsSeconds;
             previousBlockedWebsites = Data.BlockedWebsites;
             previousFocusModeEnabled = Data.FocusModeEnabled;
+            previousDarkModeEnabled = Data.DarkModeEnabled;
             previousFocusApplications = Data.FocusApplications;
             previousFocusWebsites = Data.FocusWebsites;
             previousDowntimeUntil = Data.LimitDowntimeUntilUtc;
@@ -203,6 +205,7 @@ public sealed class UsageTracker
             Data.WebsiteLimitsSeconds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             Data.BlockedWebsites = [];
             Data.FocusModeEnabled = false;
+            Data.DarkModeEnabled = false;
             Data.FocusApplications = [];
             Data.FocusWebsites = [];
             Data.LimitDowntimeUntilUtc = null;
@@ -225,6 +228,7 @@ public sealed class UsageTracker
                 Data.WebsiteLimitsSeconds = previousWebsiteLimits;
                 Data.BlockedWebsites = previousBlockedWebsites;
                 Data.FocusModeEnabled = previousFocusModeEnabled;
+                Data.DarkModeEnabled = previousDarkModeEnabled;
                 Data.FocusApplications = previousFocusApplications;
                 Data.FocusWebsites = previousFocusWebsites;
                 Data.LimitDowntimeUntilUtc = previousDowntimeUntil;
@@ -522,6 +526,30 @@ public sealed class UsageTracker
             lock (_dataLock)
             {
                 Data.FocusModeEnabled = previousValue;
+            }
+
+            throw;
+        }
+    }
+
+    public void SetDarkModeEnabled(bool enabled)
+    {
+        bool previousValue;
+        lock (_dataLock)
+        {
+            previousValue = Data.DarkModeEnabled;
+            Data.DarkModeEnabled = enabled;
+        }
+
+        try
+        {
+            Save();
+        }
+        catch
+        {
+            lock (_dataLock)
+            {
+                Data.DarkModeEnabled = previousValue;
             }
 
             throw;

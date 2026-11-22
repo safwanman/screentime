@@ -1,30 +1,22 @@
-<Window x:Class="ScreenTimeTracker.BlockedSitesWindow"
+<UserControl x:Class="ScreenTimeTracker.BlockedSitesView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Blocked websites"
-        Width="640"
-        Height="700"
-        MinWidth="560"
-        MinHeight="560"
-        WindowStartupLocation="CenterOwner"
-        Background="#F4F6FA"
+        Background="{DynamicResource Theme.Background}"
         FontFamily="Segoe UI"
-        Foreground="#182230">
-  <Window.Resources>
+        Foreground="{DynamicResource Theme.Text}">
+  <UserControl.Resources>
     <Style x:Key="Card" TargetType="Border">
-      <Setter Property="Background" Value="White" />
-      <Setter Property="BorderBrush" Value="#E9EDF3" />
+      <Setter Property="Background" Value="{DynamicResource Theme.Surface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="CornerRadius" Value="16" />
       <Setter Property="Padding" Value="18" />
     </Style>
     <DataTemplate x:Key="BlockedSiteTemplate">
       <Border Margin="0,0,0,8"
-              Padding="12,9"
-              CornerRadius="10"
-              Background="#FAFBFD"
-              BorderBrush="#EEF1F5"
-              BorderThickness="1">
+              Padding="13,10"
+              CornerRadius="14"
+              Background="{DynamicResource Theme.SurfaceAlt}">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -37,17 +29,13 @@
                   Content="Remove"
                   Tag="{Binding}"
                   Click="RemoveSite_Click"
-                  Padding="9,5"
-                  Background="Transparent"
-                  Foreground="#A34848"
-                  BorderThickness="0"
-                  Cursor="Hand" />
+                  Style="{StaticResource ListActionButton}" />
         </Grid>
       </Border>
     </DataTemplate>
-  </Window.Resources>
+  </UserControl.Resources>
 
-  <Grid Margin="28,24">
+  <Grid Margin="24,20">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="16" />
@@ -62,7 +50,7 @@
       <TextBlock Text="Blocked websites" FontSize="22" FontWeight="SemiBold" />
       <TextBlock Text="Choose websites that should always be blocked in Edge."
                  FontSize="12"
-                 Foreground="#7B8798"
+                 Foreground="{DynamicResource Theme.Muted}"
                  Margin="0,5,0,0" />
     </StackPanel>
 
@@ -73,12 +61,7 @@
                    FontWeight="SemiBold" />
         <TextBlock Text="TikTok (entire site), YouTube Shorts, Instagram Reels, Facebook Reels, and Snapchat Spotlight."
                    FontSize="11"
-                   Foreground="#657184"
-                   TextWrapping="Wrap"
-                   Margin="0,6,0,0" />
-        <TextBlock Text="Only the site domain and a short-form yes/no flag are sent to the tracker; page paths stay in Edge."
-                   FontSize="10"
-                   Foreground="#8994A5"
+                   Foreground="{DynamicResource Theme.MutedStrong}"
                    TextWrapping="Wrap"
                    Margin="0,6,0,0" />
       </StackPanel>
@@ -98,7 +81,7 @@
           <TextBlock Text="Your blocked domains" FontSize="15" FontWeight="SemiBold" />
           <TextBlock Text="A blocked domain also blocks all of its subdomains."
                      FontSize="11"
-                     Foreground="#7B8798"
+                     Foreground="{DynamicResource Theme.Muted}"
                      Margin="0,4,0,0" />
         </StackPanel>
         <Grid Grid.Row="2">
@@ -109,17 +92,20 @@
           <TextBox x:Name="DomainInput"
                    Padding="10,8"
                    VerticalContentAlignment="Center"
-                   Background="#FAFBFD"
-                   BorderBrush="#DDE3ED"
+                   Background="{DynamicResource Theme.Input}"
+                   Foreground="{DynamicResource Theme.Text}"
+                   CaretBrush="{DynamicResource Theme.Text}"
+                   BorderBrush="{DynamicResource Theme.InputBorder}"
                    ToolTip="Enter a domain only, such as example.com" />
           <Button Grid.Column="1"
                   Content="Add domain"
                   Click="AddSite_Click"
                   Padding="15,8"
                   Margin="10,0,0,0"
-                  Background="#5B6CE1"
-                  Foreground="White"
-                  BorderBrush="#5B6CE1"
+                  Background="{DynamicResource Theme.Accent}"
+                  Foreground="{DynamicResource Theme.OnAccent}"
+                  BorderBrush="{DynamicResource Theme.Accent}"
+                  Style="{StaticResource RoundedButton}"
                   FontWeight="SemiBold"
                   Cursor="Hand" />
         </Grid>
@@ -131,7 +117,7 @@
           <TextBlock x:Name="EmptyText"
                      Text="No custom blocked domains yet."
                      FontSize="12"
-                     Foreground="#8994A5"
+                     Foreground="{DynamicResource Theme.Subtle}"
                      HorizontalAlignment="Center"
                      VerticalAlignment="Top"
                      Margin="0,14,0,0" />
@@ -139,7 +125,7 @@
         <TextBlock Grid.Row="5"
                    Text="Custom blocks and automatic short-form blocks require the desktop app and Edge extension to be running."
                    FontSize="10"
-                   Foreground="#8994A5"
+                   Foreground="{DynamicResource Theme.Subtle}"
                    TextWrapping="Wrap"
                    Margin="0,10,0,0" />
       </Grid>
@@ -148,20 +134,22 @@
     <StackPanel Grid.Row="6"
                 Orientation="Horizontal"
                 HorizontalAlignment="Right">
-      <Button Content="Cancel"
+      <Button Content="Discard changes"
               Click="Cancel_Click"
               Padding="18,9"
               Margin="0,0,9,0"
-              Background="White"
-              Foreground="#657184"
-              BorderBrush="#E1E6EF" />
+              Background="{DynamicResource Theme.Surface}"
+              Foreground="{DynamicResource Theme.MutedStrong}"
+              BorderBrush="{DynamicResource Theme.BorderStrong}"
+              Style="{StaticResource RoundedButton}" />
       <Button Content="Save blocked sites"
               Click="Save_Click"
               Padding="18,9"
-              Background="#5B6CE1"
-              Foreground="White"
-              BorderBrush="#5B6CE1"
+              Background="{DynamicResource Theme.Accent}"
+              Foreground="{DynamicResource Theme.OnAccent}"
+              BorderBrush="{DynamicResource Theme.Accent}"
+              Style="{StaticResource RoundedButton}"
               FontWeight="SemiBold" />
     </StackPanel>
   </Grid>
-</Window>
+</UserControl>

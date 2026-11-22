@@ -11,25 +11,66 @@ using ScreenTimeTracker.Services;
 
 using TextBox = System.Windows.Controls.TextBox;
 using Button = System.Windows.Controls.Button;
+using UserControl = System.Windows.Controls.UserControl;
+using Window = System.Windows.Window;
 using MessageBox = System.Windows.MessageBox;
 using MessageBoxButton = System.Windows.MessageBoxButton;
 using MessageBoxImage = System.Windows.MessageBoxImage;
 
 namespace ScreenTimeTracker;
 
-public partial class LimitsWindow : Window
+public partial class LimitsView : UserControl
 {
     private readonly UsageTracker _tracker;
     private readonly ObservableCollection<LimitEntry> _entries = [];
     private readonly DispatcherTimer _cooldownTimer;
 
-    public LimitsWindow(UsageTracker tracker)
+    public LimitsView(UsageTracker tracker)
     {
         InitializeComponent();
         _tracker = tracker;
         LimitItems.ItemsSource = _entries;
         RefreshRunningApps();
         UpdateTargetInputVisibility();
+
+        LoadSavedLimits();
+
+        _cooldownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _cooldownTimer.Tick += (_, _) => UpdateCooldownState();
+        IsVisibleChanged += (_, _) =>
+        {
+            if (IsVisible)
+            {
+                UpdateCooldownState();
+                _cooldownTimer.Start();
+            }
+            else
+            {
+                _cooldownTimer.Stop();
+            }
+        };
+        UpdateCooldownState();
+    }
+
+    public event EventHandler? LimitsSaved;
+
+    public void ReloadFromTracker()
+    {
+        LoadSavedLimits();
+        UpdateCooldownState();
+    }
+
+    private void LoadSavedLimits()
+    {
+        _entries.Clear();
+        DailyHoursInput.Clear();
+        DailyMinutesInput.Clear();
+        DailySecondsInput.Clear();
+        TargetInput.Clear();
+        AppPicker.SelectedItem = null;
+        HoursInput.Clear();
+        MinutesInput.Clear();
+        SecondsInput.Clear();
 
         if (_tracker.Data.DailyLimitSeconds is int dailyLimit)
         {
@@ -39,12 +80,6 @@ public partial class LimitsWindow : Window
         AddEntries("App", _tracker.Data.ApplicationLimitsSeconds);
         AddEntries("Website", _tracker.Data.WebsiteLimitsSeconds);
         UpdateEmptyState();
-
-        _cooldownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-        _cooldownTimer.Tick += (_, _) => UpdateCooldownState();
-        Closed += (_, _) => _cooldownTimer.Stop();
-        UpdateCooldownState();
-        _cooldownTimer.Start();
     }
 
     private void AddEntries(string type, Dictionary<string, int> limits)
@@ -181,7 +216,7 @@ public partial class LimitsWindow : Window
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             MessageBox.Show(
-                this,
+                Window.GetWindow(this),
                 $"Limits could not be saved.\n\n{exception.Message}",
                 "Screen Time Tracker",
                 MessageBoxButton.OK,
@@ -189,7 +224,7 @@ public partial class LimitsWindow : Window
             return;
         }
 
-        DialogResult = true;
+        LimitsSaved?.Invoke(this, EventArgs.Empty);
     }
 
     private void UpdateCooldownState()
@@ -218,7 +253,7 @@ public partial class LimitsWindow : Window
     private void UnlockLimits_Click(object sender, RoutedEventArgs e)
     {
         var result = MessageBox.Show(
-            this,
+            Window.GetWindow(this),
             "Unlock the limit editor now? The limit that was reached will still be enforced, but you can change or remove it.",
             "Unlock limits early?",
             MessageBoxButton.YesNo,
@@ -238,7 +273,7 @@ public partial class LimitsWindow : Window
             exception is IOException or UnauthorizedAccessException)
         {
             MessageBox.Show(
-                this,
+                Window.GetWindow(this),
                 $"The limits could not be unlocked.\n\n{exception.Message}",
                 "Unlock failed",
                 MessageBoxButton.OK,
@@ -248,7 +283,7 @@ public partial class LimitsWindow : Window
 
     private void Cancel_Click(object sender, RoutedEventArgs e)
     {
-        DialogResult = false;
+        LoadSavedLimits();
     }
 
     private void UpdateEmptyState()
@@ -285,7 +320,7 @@ public partial class LimitsWindow : Window
             exception is IOException or UnauthorizedAccessException or Win32Exception)
         {
             MessageBox.Show(
-                this,
+                Window.GetWindow(this),
                 $"The list of running apps could not be loaded.\n\n{exception.Message}",
                 "Running apps unavailable",
                 MessageBoxButton.OK,
@@ -296,13 +331,15 @@ public partial class LimitsWindow : Window
     private void UpdateTargetInputVisibility()
     {
         var isApp = (LimitTypePicker.SelectedItem as ComboBoxItem)?.Content?.ToString() == "App";
+        LimitTypePicker.IsDropDownOpen = false;
+        AppPicker.IsDropDownOpen = false;
         AppPicker.Visibility = isApp ? Visibility.Visible : Visibility.Collapsed;
         TargetInput.Visibility = isApp ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private void ShowValidationError(string message)
     {
-        MessageBox.Show(this, message, "Check your limits", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(Window.GetWindow(this), message, "Check your limits", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private static bool TryReadDuration(

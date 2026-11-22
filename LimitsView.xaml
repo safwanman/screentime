@@ -1,46 +1,40 @@
-<Window x:Class="ScreenTimeTracker.LimitsWindow"
+<UserControl x:Class="ScreenTimeTracker.LimitsView"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Screen Time Limits"
-        Width="760"
-        Height="800"
-        MinWidth="680"
-        MinHeight="660"
-        ResizeMode="CanResizeWithGrip"
-        WindowStartupLocation="CenterOwner"
-        Background="#F4F6FA"
+        Background="{DynamicResource Theme.Background}"
         FontFamily="Segoe UI"
-        Foreground="#182230">
-  <Window.Resources>
+        Foreground="{DynamicResource Theme.Text}">
+  <UserControl.Resources>
     <Style x:Key="Card" TargetType="Border">
-      <Setter Property="Background" Value="White" />
-      <Setter Property="BorderBrush" Value="#E9EDF3" />
+      <Setter Property="Background" Value="{DynamicResource Theme.Surface}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="14" />
-      <Setter Property="Padding" Value="20" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="Padding" Value="17" />
     </Style>
     <Style x:Key="TimeField" TargetType="TextBox">
       <Setter Property="Padding" Value="9,7" />
       <Setter Property="FontSize" Value="13" />
       <Setter Property="TextAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
-      <Setter Property="BorderBrush" Value="#DDE3ED" />
-      <Setter Property="Background" Value="#FAFBFD" />
+      <Setter Property="Foreground" Value="{DynamicResource Theme.Text}" />
+      <Setter Property="CaretBrush" Value="{DynamicResource Theme.Text}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Theme.InputBorder}" />
+      <Setter Property="Background" Value="{DynamicResource Theme.Input}" />
     </Style>
-    <Style x:Key="ActionButton" TargetType="Button">
+    <Style x:Key="ActionButton"
+           TargetType="Button"
+           BasedOn="{StaticResource RoundedButton}">
       <Setter Property="Padding" Value="18,9" />
-      <Setter Property="BorderThickness" Value="1" />
       <Setter Property="FontSize" Value="12" />
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Cursor" Value="Hand" />
     </Style>
     <DataTemplate x:Key="LimitItemTemplate">
       <Border Margin="0,0,0,8"
-              Padding="12,10"
-              CornerRadius="10"
-              Background="#FAFBFD"
-              BorderBrush="#EEF1F5"
-              BorderThickness="1">
+              Padding="13,10"
+              CornerRadius="14"
+              Background="{DynamicResource Theme.SurfaceAlt}">
       <Grid MinHeight="38">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="62" />
@@ -49,11 +43,11 @@
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
         <Border Padding="8,4"
-                CornerRadius="7"
-                Background="#F0F2FF"
+                CornerRadius="9"
+                Background="{DynamicResource Theme.AccentSurface}"
                 VerticalAlignment="Center">
           <TextBlock Text="{Binding Type}"
-                     Foreground="#5969D5"
+                     Foreground="{DynamicResource Theme.AccentText}"
                      FontSize="10"
                      FontWeight="SemiBold"
                      HorizontalAlignment="Center" />
@@ -76,7 +70,7 @@
                    ToolTip="Hours (0–24). Scroll to adjust."
                    PreviewMouseWheel="DurationField_PreviewMouseWheel"
                    PreviewTextInput="DurationField_PreviewTextInput" />
-          <TextBlock Text="h" Margin="4,0,7,0" VerticalAlignment="Center" Foreground="#7B8798" />
+          <TextBlock Text="h" Margin="4,0,7,0" VerticalAlignment="Center" Foreground="{DynamicResource Theme.Muted}" />
           <TextBox Width="40"
                    Text="{Binding Minutes, UpdateSourceTrigger=PropertyChanged}"
                    Style="{StaticResource TimeField}"
@@ -84,7 +78,7 @@
                    ToolTip="Minutes (0–59). Scroll to adjust."
                    PreviewMouseWheel="DurationField_PreviewMouseWheel"
                    PreviewTextInput="DurationField_PreviewTextInput" />
-          <TextBlock Text="m" Margin="4,0,7,0" VerticalAlignment="Center" Foreground="#7B8798" />
+          <TextBlock Text="m" Margin="4,0,7,0" VerticalAlignment="Center" Foreground="{DynamicResource Theme.Muted}" />
           <TextBox Width="40"
                    Text="{Binding Seconds, UpdateSourceTrigger=PropertyChanged}"
                    Style="{StaticResource TimeField}"
@@ -92,25 +86,20 @@
                    ToolTip="Seconds (0–59). Scroll to adjust."
                    PreviewMouseWheel="DurationField_PreviewMouseWheel"
                    PreviewTextInput="DurationField_PreviewTextInput" />
-          <TextBlock Text="s" Margin="4,0,0,0" VerticalAlignment="Center" Foreground="#7B8798" />
+          <TextBlock Text="s" Margin="4,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Theme.Muted}" />
         </StackPanel>
         <Button Grid.Column="3"
                 Content="Remove"
                 Tag="{Binding}"
                 Click="RemoveLimit_Click"
-                Padding="9,6"
                 Margin="6,0,0,0"
-                Background="Transparent"
-                Foreground="#A34848"
-                BorderThickness="0"
-                FontSize="11"
-                Cursor="Hand" />
+                Style="{StaticResource ListActionButton}" />
       </Grid>
       </Border>
     </DataTemplate>
-  </Window.Resources>
+  </UserControl.Resources>
 
-  <Grid Margin="32,26,32,24">
+  <Grid Margin="24,20">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="18" />
@@ -121,29 +110,13 @@
       <RowDefinition Height="Auto" />
     </Grid.RowDefinitions>
 
-    <Grid>
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="46" />
-        <ColumnDefinition Width="*" />
-      </Grid.ColumnDefinitions>
-      <Border Width="42"
-              Height="42"
-              CornerRadius="13"
-              Background="#F0F2FF">
-        <TextBlock Text="ST"
-                   Foreground="#5969D5"
-                   FontWeight="Bold"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center" />
-      </Border>
-      <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0">
-        <TextBlock Text="Entertainment and app limits" FontSize="22" FontWeight="SemiBold" />
-        <TextBlock Text="Set a daily entertainment cap and individual app or website limits."
+    <StackPanel>
+      <TextBlock Text="Entertainment and app limits" FontSize="22" FontWeight="SemiBold" />
+      <TextBlock Text="Set a daily entertainment cap and individual app or website limits."
                  FontSize="12"
-                 Foreground="#7B8798"
+                 Foreground="{DynamicResource Theme.Muted}"
                  Margin="0,5,0,0" />
-      </StackPanel>
-    </Grid>
+    </StackPanel>
 
     <Border Grid.Row="2" Style="{StaticResource Card}">
       <Grid>
@@ -156,9 +129,9 @@
             <Border Width="30"
                     Height="30"
                     CornerRadius="9"
-                    Background="#F0F2FF">
+                    Background="{DynamicResource Theme.AccentSurface}">
               <TextBlock Text="&#x25F7;"
-                         Foreground="#5969D5"
+                         Foreground="{DynamicResource Theme.AccentText}"
                          FontSize="16"
                          HorizontalAlignment="Center"
                          VerticalAlignment="Center" />
@@ -171,7 +144,7 @@
           </StackPanel>
           <TextBlock Text="Usage from apps and websites on your Focus lists. Leave all fields blank to turn this off."
                      FontSize="11"
-                     Foreground="#7B8798"
+                     Foreground="{DynamicResource Theme.Muted}"
                      Margin="40,6,0,0" />
         </StackPanel>
         <StackPanel Grid.Column="1"
@@ -185,7 +158,7 @@
                    ToolTip="Hours (0–24). Scroll to adjust."
                    PreviewMouseWheel="DurationField_PreviewMouseWheel"
                    PreviewTextInput="DurationField_PreviewTextInput" />
-          <TextBlock Text="h" Margin="5,0,12,0" VerticalAlignment="Center" Foreground="#7B8798" />
+          <TextBlock Text="h" Margin="5,0,12,0" VerticalAlignment="Center" Foreground="{DynamicResource Theme.Muted}" />
           <TextBox x:Name="DailyMinutesInput"
                    Width="48"
                    Style="{StaticResource TimeField}"
@@ -193,7 +166,7 @@
                    ToolTip="Minutes (0–59). Scroll to adjust."
                    PreviewMouseWheel="DurationField_PreviewMouseWheel"
                    PreviewTextInput="DurationField_PreviewTextInput" />
-          <TextBlock Text="m" Margin="5,0,12,0" VerticalAlignment="Center" Foreground="#7B8798" />
+          <TextBlock Text="m" Margin="5,0,12,0" VerticalAlignment="Center" Foreground="{DynamicResource Theme.Muted}" />
           <TextBox x:Name="DailySecondsInput"
                    Width="48"
                    Style="{StaticResource TimeField}"
@@ -201,7 +174,7 @@
                    ToolTip="Seconds (0–59). Scroll to adjust."
                    PreviewMouseWheel="DurationField_PreviewMouseWheel"
                    PreviewTextInput="DurationField_PreviewTextInput" />
-          <TextBlock Text="s" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="#7B8798" />
+          <TextBlock Text="s" Margin="5,0,0,0" VerticalAlignment="Center" Foreground="{DynamicResource Theme.Muted}" />
         </StackPanel>
       </Grid>
     </Border>
@@ -226,24 +199,24 @@
             <TextBlock Text="App &amp; website limits" FontWeight="SemiBold" FontSize="16" />
             <TextBlock Text="Set daily caps for individual apps and websites."
                        FontSize="11"
-                       Foreground="#7B8798"
+                       Foreground="{DynamicResource Theme.Muted}"
                        Margin="0,4,0,0" />
           </StackPanel>
           <Border Grid.Column="1"
                   Padding="10,5"
                   CornerRadius="8"
-                  Background="#F4F6FA"
+                  Background="{DynamicResource Theme.SurfaceAlt}"
                   VerticalAlignment="Center">
             <TextBlock Text="{Binding ElementName=LimitItems, Path=Items.Count, StringFormat={}{0} limits}"
                        FontSize="11"
-                       Foreground="#657184" />
+                       Foreground="{DynamicResource Theme.MutedStrong}" />
           </Border>
         </Grid>
         <Border Grid.Row="2"
                 Padding="16"
                 CornerRadius="12"
-                Background="#F8F9FC"
-                BorderBrush="#EEF1F5"
+                Background="{DynamicResource Theme.SurfaceAlt}"
+                BorderBrush="{DynamicResource Theme.Border}"
                 BorderThickness="1">
           <Grid>
             <Grid.RowDefinitions>
@@ -259,7 +232,10 @@
               <ComboBox x:Name="LimitTypePicker"
                         SelectedIndex="0"
                         SelectionChanged="LimitTypePicker_SelectionChanged"
-                        Padding="9,7">
+                        Padding="9,7"
+                        Background="{DynamicResource Theme.Input}"
+                        Foreground="{DynamicResource Theme.Text}"
+                        BorderBrush="{DynamicResource Theme.InputBorder}">
                 <ComboBoxItem Content="App" />
                 <ComboBoxItem Content="Website" />
               </ComboBox>
@@ -269,14 +245,19 @@
                         Padding="9,7"
                         IsTextSearchEnabled="True"
                         DropDownOpened="AppPicker_DropDownOpened"
+                        Background="{DynamicResource Theme.Input}"
+                        Foreground="{DynamicResource Theme.Text}"
+                        BorderBrush="{DynamicResource Theme.InputBorder}"
                         ToolTip="Choose an app that is currently running" />
               <TextBox x:Name="TargetInput"
                        Grid.Column="1"
                        Margin="10,0,0,0"
                        Padding="10,8"
                        VerticalContentAlignment="Center"
-                       Background="White"
-                       BorderBrush="#DDE3ED"
+                       Background="{DynamicResource Theme.Surface}"
+                       Foreground="{DynamicResource Theme.Text}"
+                       CaretBrush="{DynamicResource Theme.Text}"
+                       BorderBrush="{DynamicResource Theme.InputBorder}"
                        ToolTip="Enter a website domain" />
             </Grid>
             <Grid Grid.Row="2">
@@ -286,7 +267,7 @@
               </Grid.ColumnDefinitions>
               <StackPanel Orientation="Horizontal">
                 <StackPanel>
-                  <TextBlock Text="HOURS" FontSize="9" FontWeight="SemiBold" Foreground="#8994A5" Margin="0,0,0,5" />
+                  <TextBlock Text="HOURS" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource Theme.Subtle}" Margin="0,0,0,5" />
                   <TextBox x:Name="HoursInput"
                            Width="60"
                            Style="{StaticResource TimeField}"
@@ -296,7 +277,7 @@
                            PreviewTextInput="DurationField_PreviewTextInput" />
                 </StackPanel>
                 <StackPanel Margin="10,0,0,0">
-                  <TextBlock Text="MINUTES" FontSize="9" FontWeight="SemiBold" Foreground="#8994A5" Margin="0,0,0,5" />
+                  <TextBlock Text="MINUTES" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource Theme.Subtle}" Margin="0,0,0,5" />
                   <TextBox x:Name="MinutesInput"
                            Width="60"
                            Style="{StaticResource TimeField}"
@@ -306,7 +287,7 @@
                            PreviewTextInput="DurationField_PreviewTextInput" />
                 </StackPanel>
                 <StackPanel Margin="10,0,0,0">
-                  <TextBlock Text="SECONDS" FontSize="9" FontWeight="SemiBold" Foreground="#8994A5" Margin="0,0,0,5" />
+                  <TextBlock Text="SECONDS" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource Theme.Subtle}" Margin="0,0,0,5" />
                   <TextBox x:Name="SecondsInput"
                            Width="60"
                            Style="{StaticResource TimeField}"
@@ -321,12 +302,13 @@
                       Click="AddLimit_Click"
                       Padding="18,9"
                       VerticalAlignment="Bottom"
-                      Background="#5B6CE1"
-                      Foreground="White"
-                      BorderBrush="#5B6CE1"
+                      Background="{DynamicResource Theme.Accent}"
+                      Foreground="{DynamicResource Theme.OnAccent}"
+                      BorderBrush="{DynamicResource Theme.Accent}"
                       BorderThickness="1"
                       FontSize="12"
                       FontWeight="SemiBold"
+                      Style="{StaticResource RoundedButton}"
                       Cursor="Hand" />
             </Grid>
           </Grid>
@@ -335,17 +317,15 @@
                    Text="YOUR LIMITS"
                    FontSize="10"
                    FontWeight="Bold"
-                   Foreground="#8994A5" />
+                   Foreground="{DynamicResource Theme.Subtle}" />
         <Grid Grid.Row="5" Margin="0,10,0,0">
           <ScrollViewer VerticalScrollBarVisibility="Auto">
             <ItemsControl x:Name="LimitItems" ItemTemplate="{StaticResource LimitItemTemplate}" />
           </ScrollViewer>
           <Border x:Name="EmptyText"
                   Padding="20"
-                  CornerRadius="12"
-                  Background="#FAFBFD"
-                  BorderBrush="#EEF1F5"
-                  BorderThickness="1"
+                  CornerRadius="14"
+                  Background="{DynamicResource Theme.SurfaceAlt}"
                   VerticalAlignment="Top">
             <StackPanel HorizontalAlignment="Center">
               <TextBlock Text="No individual limits yet"
@@ -354,7 +334,7 @@
                          HorizontalAlignment="Center" />
               <TextBlock Text="Add an app or website above to get started."
                          FontSize="11"
-                         Foreground="#8994A5"
+                         Foreground="{DynamicResource Theme.Subtle}"
                          Margin="0,5,0,0"
                          HorizontalAlignment="Center" />
             </StackPanel>
@@ -363,38 +343,38 @@
         <TextBlock Grid.Row="6"
                    Text="App closing is a graceful request; unsaved-work prompts may delay it."
                    FontSize="10"
-                   Foreground="#8994A5"
+                   Foreground="{DynamicResource Theme.Subtle}"
                    TextWrapping="Wrap"
                    Margin="0,10,0,0" />
       </Grid>
     </Border>
 
     <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
-      <Button Content="Cancel"
+      <Button Content="Discard changes"
               Click="Cancel_Click"
               Margin="0,0,9,0"
-              Background="White"
-              Foreground="#657184"
-              BorderBrush="#E1E6EF"
+              Background="{DynamicResource Theme.Surface}"
+              Foreground="{DynamicResource Theme.MutedStrong}"
+              BorderBrush="{DynamicResource Theme.BorderStrong}"
               Style="{StaticResource ActionButton}" />
       <Button x:Name="SaveLimitsButton"
               Content="Save limits"
               Click="SaveLimits_Click"
-              Background="#5B6CE1"
-              Foreground="White"
-              BorderBrush="#5B6CE1"
+              Background="{DynamicResource Theme.Accent}"
+              Foreground="{DynamicResource Theme.OnAccent}"
+              BorderBrush="{DynamicResource Theme.Accent}"
               Style="{StaticResource ActionButton}" />
     </StackPanel>
     <Border x:Name="CooldownOverlay"
             Grid.Row="0"
             Grid.RowSpan="6"
             Panel.ZIndex="10"
-            Background="#CCF4F6FA"
+            Background="{DynamicResource Theme.LockOverlay}"
             Visibility="Collapsed">
       <Border Padding="26"
-              CornerRadius="14"
-              Background="White"
-              BorderBrush="#E0E4FF"
+              CornerRadius="16"
+              Background="{DynamicResource Theme.Surface}"
+              BorderBrush="{DynamicResource Theme.AccentBorder}"
               BorderThickness="1"
               HorizontalAlignment="Center"
               VerticalAlignment="Center">
@@ -405,7 +385,7 @@
                      HorizontalAlignment="Center" />
           <TextBlock x:Name="CooldownText"
                      FontSize="12"
-                     Foreground="#657184"
+                     Foreground="{DynamicResource Theme.MutedStrong}"
                      TextAlignment="Center"
                      TextWrapping="Wrap"
                      Margin="0,8,0,0" />
@@ -414,13 +394,14 @@
                   Padding="16,8"
                   Margin="0,16,0,0"
                   HorizontalAlignment="Center"
-                  Background="#F0F2FF"
-                  Foreground="#5363D2"
-                  BorderBrush="#E0E4FF"
+                  Background="{DynamicResource Theme.AccentSurface}"
+                  Foreground="{DynamicResource Theme.AccentText}"
+                  BorderBrush="{DynamicResource Theme.AccentBorder}"
+                  Style="{StaticResource RoundedButton}"
                   FontWeight="SemiBold"
                   Cursor="Hand" />
         </StackPanel>
       </Border>
     </Border>
   </Grid>
-</Window>
+</UserControl>

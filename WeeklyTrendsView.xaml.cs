@@ -1,16 +1,26 @@
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Controls;
+using UserControl = System.Windows.Controls.UserControl;
 using ScreenTimeTracker.Models;
 using ScreenTimeTracker.Services;
 
 namespace ScreenTimeTracker;
 
-public partial class WeeklyTrendsWindow : Window
+public partial class WeeklyTrendsView : UserControl
 {
-    public WeeklyTrendsWindow(UsageTracker tracker)
+    private readonly UsageTracker _tracker;
+
+    public WeeklyTrendsView(UsageTracker tracker)
     {
         InitializeComponent();
+        _tracker = tracker;
+        Refresh();
+    }
 
+    public void Refresh()
+    {
+        var tracker = _tracker;
         var today = DateTime.Today;
         var currentStart = today.AddDays(-6);
         var previousStart = today.AddDays(-13);

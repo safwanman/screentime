@@ -5,29 +5,45 @@ using System.Windows.Controls;
 using ScreenTimeTracker.Services;
 
 using Button = System.Windows.Controls.Button;
+using UserControl = System.Windows.Controls.UserControl;
 using MessageBox = System.Windows.MessageBox;
 using MessageBoxButton = System.Windows.MessageBoxButton;
 using MessageBoxImage = System.Windows.MessageBoxImage;
+using Window = System.Windows.Window;
 
 namespace ScreenTimeTracker;
 
-public partial class BlockedSitesWindow : Window
+public partial class BlockedSitesView : UserControl
 {
     private readonly UsageTracker _tracker;
     private readonly ObservableCollection<string> _blockedSites = [];
 
-    public BlockedSitesWindow(UsageTracker tracker)
+    public BlockedSitesView(UsageTracker tracker)
     {
         InitializeComponent();
         _tracker = tracker;
-        foreach (var site in tracker.Data.BlockedWebsites.OrderBy(
+        BlockedSitesList.ItemsSource = _blockedSites;
+        LoadSavedSites();
+    }
+
+    public event EventHandler? SettingsSaved;
+
+    public void ReloadFromTracker()
+    {
+        LoadSavedSites();
+    }
+
+    private void LoadSavedSites()
+    {
+        _blockedSites.Clear();
+        DomainInput.Clear();
+        foreach (var site in _tracker.Data.BlockedWebsites.OrderBy(
                      host => host,
                      StringComparer.OrdinalIgnoreCase))
         {
             _blockedSites.Add(site);
         }
 
-        BlockedSitesList.ItemsSource = _blockedSites;
         UpdateEmptyState();
     }
 
@@ -72,7 +88,7 @@ public partial class BlockedSitesWindow : Window
         try
         {
             _tracker.UpdateBlockedWebsites(_blockedSites);
-            DialogResult = true;
+            SettingsSaved?.Invoke(this, EventArgs.Empty);
         }
         catch (ArgumentException exception)
         {
@@ -82,7 +98,7 @@ public partial class BlockedSitesWindow : Window
             exception is IOException or UnauthorizedAccessException)
         {
             MessageBox.Show(
-                this,
+                Window.GetWindow(this),
                 $"Blocked websites could not be saved.\n\n{exception.Message}",
                 "Save failed",
                 MessageBoxButton.OK,
@@ -92,7 +108,7 @@ public partial class BlockedSitesWindow : Window
 
     private void Cancel_Click(object sender, RoutedEventArgs e)
     {
-        DialogResult = false;
+        LoadSavedSites();
     }
 
     private void UpdateEmptyState()
@@ -102,6 +118,6 @@ public partial class BlockedSitesWindow : Window
 
     private void ShowValidationError(string message)
     {
-        MessageBox.Show(this, message, "Check the website domain", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(Window.GetWindow(this), message, "Check the website domain", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 }

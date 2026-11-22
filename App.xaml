@@ -3,9 +3,184 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnExplicitShutdown">
   <Application.Resources>
-    <SolidColorBrush x:Key="Ink" Color="#182230" />
-    <SolidColorBrush x:Key="MutedInk" Color="#7B8798" />
-    <SolidColorBrush x:Key="Accent" Color="#5B6CE1" />
-    <SolidColorBrush x:Key="CardBorder" Color="#E9EDF3" />
+    <SolidColorBrush x:Key="Theme.Background" Color="#F7F8FA" />
+    <SolidColorBrush x:Key="Theme.Surface" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Theme.SurfaceAlt" Color="#F8F9FC" />
+    <SolidColorBrush x:Key="Theme.Input" Color="#FAFBFD" />
+    <SolidColorBrush x:Key="Theme.Text" Color="#182230" />
+    <SolidColorBrush x:Key="Theme.Muted" Color="#7B8798" />
+    <SolidColorBrush x:Key="Theme.MutedStrong" Color="#657184" />
+    <SolidColorBrush x:Key="Theme.Subtle" Color="#8994A5" />
+    <SolidColorBrush x:Key="Theme.Border" Color="#EDF0F4" />
+    <SolidColorBrush x:Key="Theme.BorderStrong" Color="#E7EAF1" />
+    <SolidColorBrush x:Key="Theme.InputBorder" Color="#DDE3ED" />
+    <SolidColorBrush x:Key="Theme.Accent" Color="#5B6CE1" />
+    <SolidColorBrush x:Key="Theme.AccentText" Color="#5969D5" />
+    <SolidColorBrush x:Key="Theme.AccentSurface" Color="#ECEEFF" />
+    <SolidColorBrush x:Key="Theme.AccentBorder" Color="#E0E4FF" />
+    <SolidColorBrush x:Key="Theme.ProgressBackground" Color="#EEF1F6" />
+    <SolidColorBrush x:Key="Theme.Progress" Color="#6475E5" />
+    <SolidColorBrush x:Key="Theme.Danger" Color="#A34848" />
+    <SolidColorBrush x:Key="Theme.Good" Color="#73D6B0" />
+    <SolidColorBrush x:Key="Theme.Website" Color="#54B69B" />
+    <SolidColorBrush x:Key="Theme.Separator" Color="#E5E9EF" />
+    <SolidColorBrush x:Key="Theme.ButtonSurface" Color="#F0F2F7" />
+    <SolidColorBrush x:Key="Theme.Slate" Color="#35415E" />
+    <SolidColorBrush x:Key="Theme.OnAccent" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Theme.Overlay" Color="#660D1424" />
+    <SolidColorBrush x:Key="Theme.LockOverlay" Color="#CCF4F6FA" />
+    <Style x:Key="RoundedButton" TargetType="Button">
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="ButtonSurface"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="12"
+                    SnapsToDevicePixels="True">
+              <ContentPresenter Margin="{TemplateBinding Padding}"
+                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                RecognizesAccessKey="True" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="ButtonSurface" Property="Opacity" Value="0.88" />
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="ButtonSurface" Property="Opacity" Value="0.76" />
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="ButtonSurface" Property="Opacity" Value="0.5" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="ListActionButton"
+           TargetType="Button"
+           BasedOn="{StaticResource RoundedButton}">
+      <Setter Property="Padding" Value="10,5" />
+      <Setter Property="Background" Value="{DynamicResource Theme.ButtonSurface}" />
+      <Setter Property="Foreground" Value="{DynamicResource Theme.MutedStrong}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Theme.ButtonSurface}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style TargetType="ComboBox">
+      <Setter Property="Padding" Value="9,7" />
+      <Setter Property="Background" Value="{DynamicResource Theme.Input}" />
+      <Setter Property="Foreground" Value="{DynamicResource Theme.Text}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource Theme.InputBorder}" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ComboBox">
+            <Grid>
+              <Border x:Name="SelectionBorder"
+                      Background="{TemplateBinding Background}"
+                      BorderBrush="{TemplateBinding BorderBrush}"
+                      BorderThickness="{TemplateBinding BorderThickness}"
+                      CornerRadius="8" />
+              <ToggleButton Background="Transparent"
+                            BorderBrush="Transparent"
+                            BorderThickness="0"
+                            Focusable="False"
+                            ClickMode="Press"
+                            IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                <ToggleButton.Template>
+                  <ControlTemplate TargetType="ToggleButton">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}" />
+                  </ControlTemplate>
+                </ToggleButton.Template>
+              </ToggleButton>
+              <ContentPresenter IsHitTestVisible="False"
+                                Content="{TemplateBinding SelectionBoxItem}"
+                                ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
+                                Margin="{TemplateBinding Padding}"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center" />
+              <Path Data="M 0,0 L 4,4 L 8,0"
+                    Stroke="{DynamicResource Theme.MutedStrong}"
+                    StrokeThickness="1.5"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Margin="0,0,12,0"
+                    IsHitTestVisible="False" />
+              <Popup x:Name="PART_Popup"
+                     Placement="Bottom"
+                     IsOpen="{TemplateBinding IsDropDownOpen}"
+                     AllowsTransparency="True"
+                     Focusable="False"
+                     PopupAnimation="Fade">
+                <Border Background="{DynamicResource Theme.Surface}"
+                        BorderBrush="{DynamicResource Theme.BorderStrong}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        MinWidth="{TemplateBinding ActualWidth}"
+                        MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                  <ScrollViewer Margin="4"
+                                CanContentScroll="True"
+                                SnapsToDevicePixels="True">
+                    <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"
+                                    SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                  </ScrollViewer>
+                </Border>
+              </Popup>
+            </Grid>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                <Setter TargetName="SelectionBorder"
+                        Property="BorderBrush"
+                        Value="{DynamicResource Theme.Accent}" />
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="SelectionBorder" Property="Opacity" Value="0.55" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style TargetType="ComboBoxItem">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource Theme.Text}" />
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ComboBoxItem">
+            <Border x:Name="ItemSurface"
+                    Background="{TemplateBinding Background}"
+                    CornerRadius="6"
+                    Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                VerticalAlignment="Center" />
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsHighlighted" Value="True">
+                <Setter TargetName="ItemSurface"
+                        Property="Background"
+                        Value="{DynamicResource Theme.SurfaceAlt}" />
+              </Trigger>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter TargetName="ItemSurface"
+                        Property="Background"
+                        Value="{DynamicResource Theme.AccentSurface}" />
+                <Setter Property="Foreground" Value="{DynamicResource Theme.AccentText}" />
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="ItemSurface" Property="Opacity" Value="0.55" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
   </Application.Resources>
 </Application>
