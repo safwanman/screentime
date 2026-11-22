@@ -9,14 +9,14 @@
       <Setter Property="Background" Value="{DynamicResource Theme.Surface}" />
       <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="CornerRadius" Value="18" />
       <Setter Property="Padding" Value="18" />
     </Style>
     <DataTemplate x:Key="BlockedSiteTemplate">
-      <Border Margin="0,0,0,8"
-              Padding="13,10"
-              CornerRadius="14"
-              Background="{DynamicResource Theme.SurfaceAlt}">
+      <Border Padding="10,10"
+              Background="Transparent"
+              BorderBrush="{DynamicResource Theme.Separator}"
+              BorderThickness="0,1,0,0">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -47,7 +47,7 @@
     </Grid.RowDefinitions>
 
     <StackPanel>
-      <TextBlock Text="Blocked websites" FontSize="22" FontWeight="SemiBold" />
+      <TextBlock Text="Blocked websites" Style="{StaticResource PageHeading}" />
       <TextBlock Text="Choose websites that should always be blocked in Edge."
                  FontSize="12"
                  Foreground="{DynamicResource Theme.Muted}"
@@ -57,8 +57,7 @@
     <Border Grid.Row="2" Style="{StaticResource Card}">
       <StackPanel>
         <TextBlock Text="Short-form content is automatically blocked"
-                   FontSize="14"
-                   FontWeight="SemiBold" />
+                   Style="{StaticResource PageSectionHeading}" />
         <TextBlock Text="TikTok (entire site), YouTube Shorts, Instagram Reels, Facebook Reels, and Snapchat Spotlight."
                    FontSize="11"
                    Foreground="{DynamicResource Theme.MutedStrong}"
@@ -78,7 +77,7 @@
           <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <StackPanel>
-          <TextBlock Text="Your blocked domains" FontSize="15" FontWeight="SemiBold" />
+          <TextBlock Text="Your blocked domains" Style="{StaticResource PageSectionHeading}" />
           <TextBlock Text="A blocked domain also blocks all of its subdomains."
                      FontSize="11"
                      Foreground="{DynamicResource Theme.Muted}"
@@ -110,9 +109,17 @@
                   Cursor="Hand" />
         </Grid>
         <Grid Grid.Row="4">
-          <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="True">
             <ItemsControl x:Name="BlockedSitesList"
-                          ItemTemplate="{StaticResource BlockedSiteTemplate}" />
+                          ItemTemplate="{StaticResource BlockedSiteTemplate}"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
           </ScrollViewer>
           <TextBlock x:Name="EmptyText"
                      Text="No custom blocked domains yet."

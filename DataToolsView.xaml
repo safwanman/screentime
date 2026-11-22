@@ -32,7 +32,7 @@
     </Grid.RowDefinitions>
 
     <StackPanel>
-      <TextBlock Text="Screen Time data" FontSize="22" FontWeight="SemiBold" />
+      <TextBlock Text="Screen Time data" Style="{StaticResource PageHeading}" />
       <TextBlock Text="Export, back up, or clear the data stored on this PC."
                  FontSize="12"
                  Foreground="{DynamicResource Theme.Muted}"

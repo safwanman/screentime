@@ -12,7 +12,7 @@
     </Grid.RowDefinitions>
 
     <StackPanel>
-      <TextBlock Text="Settings" FontSize="22" FontWeight="SemiBold" />
+      <TextBlock Text="Settings" Style="{StaticResource PageHeading}" />
       <TextBlock Text="Choose how Screen Time looks."
                  FontSize="12"
                  Foreground="{DynamicResource Theme.Muted}"
@@ -21,7 +21,7 @@
 
     <Border Grid.Row="2"
             Padding="20"
-            CornerRadius="16"
+            CornerRadius="18"
             Background="{DynamicResource Theme.Surface}"
             BorderBrush="{DynamicResource Theme.Border}"
             BorderThickness="1">

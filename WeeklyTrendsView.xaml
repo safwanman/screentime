@@ -13,10 +13,10 @@
       <Setter Property="BorderThickness" Value="0" />
     </Style>
     <DataTemplate x:Key="TrendDayTemplate">
-      <Border Margin="0,0,0,9"
-              Padding="14,12"
-              CornerRadius="14"
-              Background="{DynamicResource Theme.SurfaceAlt}">
+      <Border Padding="10,10"
+              Background="Transparent"
+              BorderBrush="{DynamicResource Theme.Separator}"
+              BorderThickness="0,1,0,0">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -75,7 +75,7 @@
     </Grid.RowDefinitions>
 
     <StackPanel>
-      <TextBlock Text="Weekly trends" FontSize="23" FontWeight="SemiBold" />
+      <TextBlock Text="Weekly trends" Style="{StaticResource PageHeading}" />
       <TextBlock Text="Last 7 calendar days, including today, compared with the previous 7 days."
                  FontSize="12"
                  Foreground="{DynamicResource Theme.Muted}"
@@ -84,7 +84,7 @@
 
     <Border Grid.Row="2"
             Padding="18"
-            CornerRadius="16"
+            CornerRadius="18"
             Background="{DynamicResource Theme.Surface}"
             BorderBrush="{DynamicResource Theme.Border}"
             BorderThickness="1">
@@ -100,8 +100,9 @@
                      FontWeight="Bold"
                      Foreground="{DynamicResource Theme.Muted}" />
           <TextBlock x:Name="CurrentTotalText"
+                     FontFamily="Georgia"
                      FontSize="25"
-                     FontWeight="SemiBold"
+                     FontWeight="Normal"
                      Margin="0,5,0,0" />
           <TextBlock x:Name="ChangeText"
                      FontSize="11"
@@ -115,8 +116,9 @@
                      FontWeight="Bold"
                      Foreground="{DynamicResource Theme.Muted}" />
           <TextBlock x:Name="PreviousTotalText"
+                     FontFamily="Georgia"
                      FontSize="25"
-                     FontWeight="SemiBold"
+                     FontWeight="Normal"
                      Margin="0,5,0,0" />
           <TextBlock Text="Website time is shown separately below."
                      FontSize="11"
@@ -133,7 +135,7 @@
 
     <Border Grid.Row="6"
             Padding="20,18"
-            CornerRadius="16"
+            CornerRadius="18"
             Background="{DynamicResource Theme.Surface}"
             BorderBrush="{DynamicResource Theme.Border}"
             BorderThickness="1">

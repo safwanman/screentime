@@ -15,7 +15,7 @@
       <Setter Property="Background" Value="{DynamicResource Theme.Surface}" />
       <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="CornerRadius" Value="18" />
       <Setter Property="Padding" Value="18" />
     </Style>
     <Style x:Key="SidebarItemButton"
@@ -33,8 +33,9 @@
       <Setter Property="Margin" Value="0,0,0,5" />
     </Style>
     <Style x:Key="SectionTitle" TargetType="TextBlock">
-      <Setter Property="FontSize" Value="16" />
-      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontFamily" Value="Georgia" />
+      <Setter Property="FontSize" Value="18" />
+      <Setter Property="FontWeight" Value="Normal" />
       <Setter Property="Foreground" Value="{DynamicResource Theme.Text}" />
     </Style>
     <Style x:Key="UsageProgress" TargetType="ProgressBar">
@@ -46,10 +47,10 @@
       <Setter Property="BorderThickness" Value="0" />
     </Style>
     <DataTemplate x:Key="UsageRowTemplate">
-      <Border Margin="0,0,0,9"
-              Padding="12,10"
-              CornerRadius="14"
-              Background="{DynamicResource Theme.SurfaceAlt}">
+      <Border Padding="10,10"
+              Background="Transparent"
+              BorderBrush="{DynamicResource Theme.Separator}"
+              BorderThickness="0,1,0,0">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -64,9 +65,9 @@
             <ColumnDefinition Width="Auto" />
           </Grid.ColumnDefinitions>
           <Border Grid.RowSpan="3"
-                  Width="32"
-                  Height="32"
-                  CornerRadius="11"
+                  Width="30"
+                  Height="30"
+                  CornerRadius="10"
                   Background="{DynamicResource Theme.AccentSurface}"
                   VerticalAlignment="Top">
             <TextBlock Text="{Binding Initial}"
@@ -81,16 +82,11 @@
                      FontWeight="SemiBold"
                      TextTrimming="CharacterEllipsis"
                      VerticalAlignment="Center" />
-          <Border Grid.Column="2"
-                  Padding="8,4"
-                  CornerRadius="10"
-                  Background="{DynamicResource Theme.AccentSurface}"
-                  VerticalAlignment="Center">
-            <TextBlock Text="{Binding Duration}"
-                       FontSize="11"
-                       FontWeight="SemiBold"
-                       Foreground="{DynamicResource Theme.AccentText}" />
-          </Border>
+          <TextBlock Grid.Column="2"
+                     Text="{Binding Duration}"
+                     FontSize="11"
+                     Foreground="{DynamicResource Theme.MutedStrong}"
+                     VerticalAlignment="Center" />
           <TextBlock Grid.Row="2"
                      Grid.Column="1"
                      Grid.ColumnSpan="2"
@@ -168,7 +164,7 @@
       </Grid.ColumnDefinitions>
 
       <Border Grid.Column="0"
-              CornerRadius="16"
+              CornerRadius="20"
               Padding="24,22"
               Background="{DynamicResource Theme.Surface}"
               BorderBrush="{DynamicResource Theme.Border}"
@@ -194,8 +190,9 @@
                        Foreground="{DynamicResource Theme.Muted}" />
             <TextBlock x:Name="TotalTimeText"
                        Text="0m"
+                       FontFamily="Georgia"
                        FontSize="54"
-                       FontWeight="SemiBold"
+                       FontWeight="Normal"
                        Foreground="{DynamicResource Theme.Text}"
                        Margin="0,7,0,0" />
             <TextBlock x:Name="TotalTimeDescription"
@@ -226,13 +223,13 @@
       <StackPanel Grid.Column="2" VerticalAlignment="Center">
         <StackPanel Margin="16,12">
             <TextBlock Text="APPS USED" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource Theme.Muted}" />
-            <TextBlock x:Name="AppCountText" Text="0" FontSize="32" FontWeight="SemiBold" Margin="0,9,0,1" />
+            <TextBlock x:Name="AppCountText" Text="0" FontFamily="Georgia" FontSize="32" FontWeight="Normal" Margin="0,9,0,1" />
             <TextBlock Text="with tracked activity today" FontSize="12" Foreground="{DynamicResource Theme.Muted}" />
         </StackPanel>
         <Border Height="1" Background="{DynamicResource Theme.Separator}" Margin="16,0" />
         <StackPanel Margin="16,12">
             <TextBlock Text="SITES VISITED" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource Theme.Muted}" />
-            <TextBlock x:Name="SiteCountText" Text="0" FontSize="32" FontWeight="SemiBold" Margin="0,9,0,1" />
+            <TextBlock x:Name="SiteCountText" Text="0" FontFamily="Georgia" FontSize="32" FontWeight="Normal" Margin="0,9,0,1" />
             <TextBlock Text="tracked in Microsoft Edge" FontSize="12" Foreground="{DynamicResource Theme.Muted}" />
         </StackPanel>
       </StackPanel>
@@ -262,17 +259,26 @@
             <TextBlock Text="Applications" Style="{StaticResource SectionTitle}" />
             <TextBlock Text="  ·  today's time" FontSize="12" Foreground="{DynamicResource Theme.Subtle}" VerticalAlignment="Center" />
           </StackPanel>
-          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-            <Grid>
-              <ItemsControl x:Name="AppList" ItemTemplate="{StaticResource UsageRowTemplate}" />
-              <TextBlock x:Name="AppEmptyText"
-                         Text="Your app time will appear here as you go."
-                         FontSize="12"
-                         Foreground="{DynamicResource Theme.Subtle}"
-                         TextWrapping="Wrap"
-                         Margin="0,9,0,0" />
-            </Grid>
-          </ScrollViewer>
+          <Grid Grid.Row="2">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="True">
+              <ItemsControl x:Name="AppList"
+                            ItemTemplate="{StaticResource UsageRowTemplate}"
+                            VirtualizingPanel.IsVirtualizing="True"
+                            VirtualizingPanel.VirtualizationMode="Recycling">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <VirtualizingStackPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
+            </ScrollViewer>
+            <TextBlock x:Name="AppEmptyText"
+                       Text="Your app time will appear here as you go."
+                       FontSize="12"
+                       Foreground="{DynamicResource Theme.Subtle}"
+                       TextWrapping="Wrap"
+                       Margin="0,9,0,0" />
+          </Grid>
         </Grid>
       </Border>
 
@@ -287,17 +293,26 @@
             <TextBlock Text="Websites" Style="{StaticResource SectionTitle}" />
             <TextBlock Text="  ·  today's time" FontSize="12" Foreground="{DynamicResource Theme.Subtle}" VerticalAlignment="Center" />
           </StackPanel>
-          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-            <Grid>
-              <ItemsControl x:Name="SiteList" ItemTemplate="{StaticResource UsageRowTemplate}" />
-              <TextBlock x:Name="SiteEmptyText"
-                         Text="Install the Edge companion to see website time."
-                         FontSize="12"
-                         Foreground="{DynamicResource Theme.Subtle}"
-                         TextWrapping="Wrap"
-                         Margin="0,9,0,0" />
-            </Grid>
-          </ScrollViewer>
+          <Grid Grid.Row="2">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="True">
+              <ItemsControl x:Name="SiteList"
+                            ItemTemplate="{StaticResource UsageRowTemplate}"
+                            VirtualizingPanel.IsVirtualizing="True"
+                            VirtualizingPanel.VirtualizationMode="Recycling">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <VirtualizingStackPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
+            </ScrollViewer>
+            <TextBlock x:Name="SiteEmptyText"
+                       Text="Install the Edge companion to see website time."
+                       FontSize="12"
+                       Foreground="{DynamicResource Theme.Subtle}"
+                       TextWrapping="Wrap"
+                       Margin="0,9,0,0" />
+          </Grid>
         </Grid>
       </Border>
     </Grid>

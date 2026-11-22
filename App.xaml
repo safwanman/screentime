@@ -3,32 +3,44 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnExplicitShutdown">
   <Application.Resources>
-    <SolidColorBrush x:Key="Theme.Background" Color="#F7F8FA" />
-    <SolidColorBrush x:Key="Theme.Surface" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="Theme.SurfaceAlt" Color="#F8F9FC" />
-    <SolidColorBrush x:Key="Theme.Input" Color="#FAFBFD" />
-    <SolidColorBrush x:Key="Theme.Text" Color="#182230" />
-    <SolidColorBrush x:Key="Theme.Muted" Color="#7B8798" />
-    <SolidColorBrush x:Key="Theme.MutedStrong" Color="#657184" />
-    <SolidColorBrush x:Key="Theme.Subtle" Color="#8994A5" />
-    <SolidColorBrush x:Key="Theme.Border" Color="#EDF0F4" />
-    <SolidColorBrush x:Key="Theme.BorderStrong" Color="#E7EAF1" />
-    <SolidColorBrush x:Key="Theme.InputBorder" Color="#DDE3ED" />
-    <SolidColorBrush x:Key="Theme.Accent" Color="#5B6CE1" />
-    <SolidColorBrush x:Key="Theme.AccentText" Color="#5969D5" />
-    <SolidColorBrush x:Key="Theme.AccentSurface" Color="#ECEEFF" />
-    <SolidColorBrush x:Key="Theme.AccentBorder" Color="#E0E4FF" />
-    <SolidColorBrush x:Key="Theme.ProgressBackground" Color="#EEF1F6" />
-    <SolidColorBrush x:Key="Theme.Progress" Color="#6475E5" />
+    <SolidColorBrush x:Key="Theme.Background" Color="#F5F4EF" />
+    <SolidColorBrush x:Key="Theme.Surface" Color="#FBFAF6" />
+    <SolidColorBrush x:Key="Theme.SurfaceAlt" Color="#F0F1E9" />
+    <SolidColorBrush x:Key="Theme.Input" Color="#FFFEFA" />
+    <SolidColorBrush x:Key="Theme.Text" Color="#242A2C" />
+    <SolidColorBrush x:Key="Theme.Muted" Color="#6D7471" />
+    <SolidColorBrush x:Key="Theme.MutedStrong" Color="#5D6860" />
+    <SolidColorBrush x:Key="Theme.Subtle" Color="#80877D" />
+    <SolidColorBrush x:Key="Theme.Border" Color="#DFDFD6" />
+    <SolidColorBrush x:Key="Theme.BorderStrong" Color="#D4D8CF" />
+    <SolidColorBrush x:Key="Theme.InputBorder" Color="#D6DBD1" />
+    <SolidColorBrush x:Key="Theme.Accent" Color="#4A7257" />
+    <SolidColorBrush x:Key="Theme.AccentText" Color="#4A7257" />
+    <SolidColorBrush x:Key="Theme.AccentSurface" Color="#E8EEE1" />
+    <SolidColorBrush x:Key="Theme.AccentBorder" Color="#DDE6D8" />
+    <SolidColorBrush x:Key="Theme.ProgressBackground" Color="#E9EBE3" />
+    <SolidColorBrush x:Key="Theme.Progress" Color="#7D9E7D" />
     <SolidColorBrush x:Key="Theme.Danger" Color="#A34848" />
-    <SolidColorBrush x:Key="Theme.Good" Color="#73D6B0" />
-    <SolidColorBrush x:Key="Theme.Website" Color="#54B69B" />
-    <SolidColorBrush x:Key="Theme.Separator" Color="#E5E9EF" />
-    <SolidColorBrush x:Key="Theme.ButtonSurface" Color="#F0F2F7" />
-    <SolidColorBrush x:Key="Theme.Slate" Color="#35415E" />
+    <SolidColorBrush x:Key="Theme.Good" Color="#86AA83" />
+    <SolidColorBrush x:Key="Theme.Website" Color="#7D9E7D" />
+    <SolidColorBrush x:Key="Theme.Separator" Color="#DFDFD6" />
+    <SolidColorBrush x:Key="Theme.ButtonSurface" Color="#EBEEE6" />
+    <SolidColorBrush x:Key="Theme.Slate" Color="#35483B" />
     <SolidColorBrush x:Key="Theme.OnAccent" Color="#FFFFFF" />
     <SolidColorBrush x:Key="Theme.Overlay" Color="#660D1424" />
-    <SolidColorBrush x:Key="Theme.LockOverlay" Color="#CCF4F6FA" />
+    <SolidColorBrush x:Key="Theme.LockOverlay" Color="#CCF5F4EF" />
+    <Style x:Key="PageHeading" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Georgia" />
+      <Setter Property="FontSize" Value="26" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="Foreground" Value="{DynamicResource Theme.Text}" />
+    </Style>
+    <Style x:Key="PageSectionHeading" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Georgia" />
+      <Setter Property="FontSize" Value="18" />
+      <Setter Property="FontWeight" Value="Normal" />
+      <Setter Property="Foreground" Value="{DynamicResource Theme.Text}" />
+    </Style>
     <Style x:Key="RoundedButton" TargetType="Button">
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="Template">
@@ -38,7 +50,7 @@
                     Background="{TemplateBinding Background}"
                     BorderBrush="{TemplateBinding BorderBrush}"
                     BorderThickness="{TemplateBinding BorderThickness}"
-                    CornerRadius="12"
+                    CornerRadius="14"
                     SnapsToDevicePixels="True">
               <ContentPresenter Margin="{TemplateBinding Padding}"
                                 HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"

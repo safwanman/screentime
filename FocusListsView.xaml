@@ -9,14 +9,14 @@
       <Setter Property="Background" Value="{DynamicResource Theme.Surface}" />
       <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="CornerRadius" Value="18" />
       <Setter Property="Padding" Value="18" />
     </Style>
     <DataTemplate x:Key="FocusAppTemplate">
-      <Border Margin="0,0,0,8"
-              Padding="13,10"
-              CornerRadius="14"
-              Background="{DynamicResource Theme.SurfaceAlt}">
+      <Border Padding="10,10"
+              Background="Transparent"
+              BorderBrush="{DynamicResource Theme.Separator}"
+              BorderThickness="0,1,0,0">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -34,10 +34,10 @@
       </Border>
     </DataTemplate>
     <DataTemplate x:Key="FocusWebsiteTemplate">
-      <Border Margin="0,0,0,8"
-              Padding="13,10"
-              CornerRadius="14"
-              Background="{DynamicResource Theme.SurfaceAlt}">
+      <Border Padding="10,10"
+              Background="Transparent"
+              BorderBrush="{DynamicResource Theme.Separator}"
+              BorderThickness="0,1,0,0">
         <Grid>
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -64,7 +64,7 @@
     </Grid.RowDefinitions>
 
     <StackPanel>
-      <TextBlock Text="Focus mode lists" FontSize="22" FontWeight="SemiBold" />
+      <TextBlock Text="Focus mode lists" Style="{StaticResource PageHeading}" />
       <TextBlock Text="Focus Mode blocks these while it is on; reaching the daily entertainment limit also blocks them for the rest of the day."
                  FontSize="12"
                  Foreground="{DynamicResource Theme.Muted}"
@@ -86,7 +86,7 @@
             <RowDefinition Height="*" />
           </Grid.RowDefinitions>
           <StackPanel>
-            <TextBlock Text="Entertainment apps" FontSize="15" FontWeight="SemiBold" />
+            <TextBlock Text="Entertainment apps" Style="{StaticResource PageSectionHeading}" />
             <TextBlock Text="Enter the displayed app name or executable name."
                        FontSize="11"
                        Foreground="{DynamicResource Theme.Muted}"
@@ -118,9 +118,17 @@
                     Cursor="Hand" />
           </Grid>
           <Grid Grid.Row="2">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="True">
               <ItemsControl x:Name="AppsList"
-                            ItemTemplate="{StaticResource FocusAppTemplate}" />
+                            ItemTemplate="{StaticResource FocusAppTemplate}"
+                            VirtualizingPanel.IsVirtualizing="True"
+                            VirtualizingPanel.VirtualizationMode="Recycling">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <VirtualizingStackPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
             </ScrollViewer>
             <TextBlock x:Name="AppsEmptyText"
                        Text="No focus-blocked apps."
@@ -141,7 +149,7 @@
             <RowDefinition Height="*" />
           </Grid.RowDefinitions>
           <StackPanel>
-            <TextBlock Text="Entertainment websites" FontSize="15" FontWeight="SemiBold" />
+            <TextBlock Text="Entertainment websites" Style="{StaticResource PageSectionHeading}" />
             <TextBlock Text="Domains include all of their subdomains."
                        FontSize="11"
                        Foreground="{DynamicResource Theme.Muted}"
@@ -173,9 +181,17 @@
                     Cursor="Hand" />
           </Grid>
           <Grid Grid.Row="2">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="True">
               <ItemsControl x:Name="WebsitesList"
-                            ItemTemplate="{StaticResource FocusWebsiteTemplate}" />
+                            ItemTemplate="{StaticResource FocusWebsiteTemplate}"
+                            VirtualizingPanel.IsVirtualizing="True"
+                            VirtualizingPanel.VirtualizationMode="Recycling">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <VirtualizingStackPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
             </ScrollViewer>
             <TextBlock x:Name="WebsitesEmptyText"
                        Text="No focus-blocked websites."

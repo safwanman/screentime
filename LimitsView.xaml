@@ -9,7 +9,7 @@
       <Setter Property="Background" Value="{DynamicResource Theme.Surface}" />
       <Setter Property="BorderBrush" Value="{DynamicResource Theme.Border}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="CornerRadius" Value="18" />
       <Setter Property="Padding" Value="17" />
     </Style>
     <Style x:Key="TimeField" TargetType="TextBox">
@@ -31,10 +31,10 @@
       <Setter Property="Cursor" Value="Hand" />
     </Style>
     <DataTemplate x:Key="LimitItemTemplate">
-      <Border Margin="0,0,0,8"
-              Padding="13,10"
-              CornerRadius="14"
-              Background="{DynamicResource Theme.SurfaceAlt}">
+      <Border Padding="10,10"
+              Background="Transparent"
+              BorderBrush="{DynamicResource Theme.Separator}"
+              BorderThickness="0,1,0,0">
       <Grid MinHeight="38">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="62" />
@@ -111,7 +111,7 @@
     </Grid.RowDefinitions>
 
     <StackPanel>
-      <TextBlock Text="Entertainment and app limits" FontSize="22" FontWeight="SemiBold" />
+      <TextBlock Text="Entertainment and app limits" Style="{StaticResource PageHeading}" />
       <TextBlock Text="Set a daily entertainment cap and individual app or website limits."
                  FontSize="12"
                  Foreground="{DynamicResource Theme.Muted}"
@@ -196,7 +196,7 @@
             <ColumnDefinition Width="Auto" />
           </Grid.ColumnDefinitions>
           <StackPanel>
-            <TextBlock Text="App &amp; website limits" FontWeight="SemiBold" FontSize="16" />
+            <TextBlock Text="App &amp; website limits" Style="{StaticResource PageSectionHeading}" />
             <TextBlock Text="Set daily caps for individual apps and websites."
                        FontSize="11"
                        Foreground="{DynamicResource Theme.Muted}"
@@ -319,12 +319,21 @@
                    FontWeight="Bold"
                    Foreground="{DynamicResource Theme.Subtle}" />
         <Grid Grid.Row="5" Margin="0,10,0,0">
-          <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <ItemsControl x:Name="LimitItems" ItemTemplate="{StaticResource LimitItemTemplate}" />
+          <ScrollViewer VerticalScrollBarVisibility="Auto" CanContentScroll="True">
+            <ItemsControl x:Name="LimitItems"
+                          ItemTemplate="{StaticResource LimitItemTemplate}"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
           </ScrollViewer>
           <Border x:Name="EmptyText"
                   Padding="20"
-                  CornerRadius="14"
+                  CornerRadius="12"
                   Background="{DynamicResource Theme.SurfaceAlt}"
                   VerticalAlignment="Top">
             <StackPanel HorizontalAlignment="Center">

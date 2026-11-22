@@ -26,12 +26,12 @@ public partial class MainWindow : Window
     private readonly UsageTracker _tracker;
     private readonly EdgeBridge _edgeBridge;
     private readonly DispatcherTimer _timer;
-    private readonly LimitsView _limitsView;
-    private readonly FocusListsView _focusListsView;
-    private readonly BlockedSitesView _blockedSitesView;
-    private readonly WeeklyTrendsView _weeklyTrendsView;
-    private readonly DataToolsView _dataToolsView;
-    private readonly SettingsView _settingsView;
+    private LimitsView? _limitsView;
+    private FocusListsView? _focusListsView;
+    private BlockedSitesView? _blockedSitesView;
+    private WeeklyTrendsView? _weeklyTrendsView;
+    private DataToolsView? _dataToolsView;
+    private SettingsView? _settingsView;
     private readonly Button[] _navigationButtons;
     private readonly System.Windows.Forms.NotifyIcon _trayIcon;
     private readonly System.Windows.Forms.ToolStripMenuItem _startupMenuItem;
@@ -88,48 +88,6 @@ public partial class MainWindow : Window
         _trayIcon.DoubleClick += (_, _) => ShowDashboard();
 
         _tracker = new UsageTracker();
-        _limitsView = new LimitsView(_tracker);
-        _limitsView.LimitsSaved += (_, _) =>
-        {
-            _notifiedLimits.Clear();
-            UpdateDashboard();
-            UpdateStatus();
-        };
-
-        _focusListsView = new FocusListsView(_tracker);
-        _focusListsView.SettingsSaved += (_, _) =>
-        {
-            _focusCloseRequestedProcessIds.Clear();
-            UpdateDashboard();
-            if (_tracker.Data.FocusModeEnabled || _tracker.HasReachedDailyEntertainmentLimit())
-            {
-                CloseOpenFocusApplications();
-            }
-        };
-
-        _blockedSitesView = new BlockedSitesView(_tracker);
-        _blockedSitesView.SettingsSaved += (_, _) => UpdateStatus();
-
-        _weeklyTrendsView = new WeeklyTrendsView(_tracker);
-        _settingsView = new SettingsView(_tracker);
-        _settingsView.ThemeChanged += (_, _) => ApplyTheme(_tracker.Data.DarkModeEnabled);
-
-        _dataToolsView = new DataToolsView(_tracker);
-        _dataToolsView.DataCleared += (_, _) =>
-        {
-            _notifiedLimits.Clear();
-            _closeRequestedProcessIds.Clear();
-            _focusCloseRequestedProcessIds.Clear();
-            _limitsView.ReloadFromTracker();
-            _focusListsView.ReloadFromTracker();
-            _blockedSitesView.ReloadFromTracker();
-            UpdateDashboard();
-            UpdateStatus();
-            UpdateFocusModeControls();
-            _settingsView.Refresh();
-            ApplyTheme(_tracker.Data.DarkModeEnabled);
-        };
-
         _viewsInitialized = true;
         ApplyTheme(_tracker.Data.DarkModeEnabled);
         NavigateToSection(0);
@@ -497,28 +455,120 @@ public partial class MainWindow : Window
         var isDashboard = selectedIndex == 0;
         DashboardContent.Visibility = isDashboard ? Visibility.Visible : Visibility.Collapsed;
         PageContent.Visibility = isDashboard ? Visibility.Collapsed : Visibility.Visible;
-        PageContent.Content = selectedIndex switch
+        object? selectedView = selectedIndex switch
         {
-            1 => _limitsView,
-            2 => _focusListsView,
-            3 => _blockedSitesView,
-            4 => _weeklyTrendsView,
-            5 => _dataToolsView,
-            6 => _settingsView,
+            1 => GetLimitsView(),
+            2 => GetFocusListsView(),
+            3 => GetBlockedSitesView(),
+            4 => GetWeeklyTrendsView(),
+            5 => GetDataToolsView(),
+            6 => GetSettingsView(),
             _ => null
         };
+        PageContent.Content = selectedView;
 
-        if (selectedIndex == 4)
+        if (selectedView is WeeklyTrendsView weeklyTrendsView)
         {
-            _weeklyTrendsView.Refresh();
+            weeklyTrendsView.Refresh();
         }
 
-        if (selectedIndex == 6)
+        if (selectedView is SettingsView settingsView)
         {
-            _settingsView.Refresh();
+            settingsView.Refresh();
         }
 
         UpdateNavigationSelection();
+    }
+
+    private LimitsView GetLimitsView()
+    {
+        if (_limitsView is not null)
+        {
+            return _limitsView;
+        }
+
+        _limitsView = new LimitsView(_tracker);
+        _limitsView.LimitsSaved += (_, _) =>
+        {
+            _notifiedLimits.Clear();
+            UpdateDashboard();
+            UpdateStatus();
+        };
+        return _limitsView;
+    }
+
+    private FocusListsView GetFocusListsView()
+    {
+        if (_focusListsView is not null)
+        {
+            return _focusListsView;
+        }
+
+        _focusListsView = new FocusListsView(_tracker);
+        _focusListsView.SettingsSaved += (_, _) =>
+        {
+            _focusCloseRequestedProcessIds.Clear();
+            UpdateDashboard();
+            if (_tracker.Data.FocusModeEnabled || _tracker.HasReachedDailyEntertainmentLimit())
+            {
+                CloseOpenFocusApplications();
+            }
+        };
+        return _focusListsView;
+    }
+
+    private BlockedSitesView GetBlockedSitesView()
+    {
+        if (_blockedSitesView is not null)
+        {
+            return _blockedSitesView;
+        }
+
+        _blockedSitesView = new BlockedSitesView(_tracker);
+        _blockedSitesView.SettingsSaved += (_, _) => UpdateStatus();
+        return _blockedSitesView;
+    }
+
+    private WeeklyTrendsView GetWeeklyTrendsView()
+    {
+        return _weeklyTrendsView ??= new WeeklyTrendsView(_tracker);
+    }
+
+    private SettingsView GetSettingsView()
+    {
+        if (_settingsView is not null)
+        {
+            return _settingsView;
+        }
+
+        _settingsView = new SettingsView(_tracker);
+        _settingsView.ThemeChanged += (_, _) => ApplyTheme(_tracker.Data.DarkModeEnabled);
+        return _settingsView;
+    }
+
+    private DataToolsView GetDataToolsView()
+    {
+        if (_dataToolsView is not null)
+        {
+            return _dataToolsView;
+        }
+
+        _dataToolsView = new DataToolsView(_tracker);
+        _dataToolsView.DataCleared += (_, _) =>
+        {
+            _notifiedLimits.Clear();
+            _closeRequestedProcessIds.Clear();
+            _focusCloseRequestedProcessIds.Clear();
+            _limitsView?.ReloadFromTracker();
+            _focusListsView?.ReloadFromTracker();
+            _blockedSitesView?.ReloadFromTracker();
+            UpdateDashboard();
+            UpdateStatus();
+            UpdateFocusModeControls();
+            _settingsView?.Refresh();
+            ApplyTheme(_tracker.Data.DarkModeEnabled);
+        };
+        return _dataToolsView;
     }
 
     private void UpdateNavigationSelection()
@@ -540,32 +590,32 @@ public partial class MainWindow : Window
 
     private void ApplyTheme(bool darkMode)
     {
-        SetThemeBrush("Theme.Background", darkMode ? "#151821" : "#F7F8FA");
-        SetThemeBrush("Theme.Surface", darkMode ? "#20242D" : "#FFFFFF");
-        SetThemeBrush("Theme.SurfaceAlt", darkMode ? "#262B35" : "#F8F9FC");
-        SetThemeBrush("Theme.Input", darkMode ? "#1C212B" : "#FAFBFD");
-        SetThemeBrush("Theme.Text", darkMode ? "#F2F4F8" : "#182230");
-        SetThemeBrush("Theme.Muted", darkMode ? "#A5AEC0" : "#7B8798");
-        SetThemeBrush("Theme.MutedStrong", darkMode ? "#BAC2D0" : "#657184");
-        SetThemeBrush("Theme.Subtle", darkMode ? "#8E98AA" : "#8994A5");
-        SetThemeBrush("Theme.Border", darkMode ? "#343B49" : "#EDF0F4");
-        SetThemeBrush("Theme.BorderStrong", darkMode ? "#454D5C" : "#E7EAF1");
-        SetThemeBrush("Theme.InputBorder", darkMode ? "#485163" : "#DDE3ED");
-        SetThemeBrush("Theme.Accent", darkMode ? "#8895FF" : "#5B6CE1");
-        SetThemeBrush("Theme.AccentText", darkMode ? "#AEB7FF" : "#5969D5");
-        SetThemeBrush("Theme.AccentSurface", darkMode ? "#30364F" : "#ECEEFF");
-        SetThemeBrush("Theme.AccentBorder", darkMode ? "#4A5178" : "#E0E4FF");
-        SetThemeBrush("Theme.ProgressBackground", darkMode ? "#3A4150" : "#EEF1F6");
-        SetThemeBrush("Theme.Progress", darkMode ? "#8A96FF" : "#6475E5");
+        SetThemeBrush("Theme.Background", darkMode ? "#1D2420" : "#F5F4EF");
+        SetThemeBrush("Theme.Surface", darkMode ? "#27332D" : "#FBFAF6");
+        SetThemeBrush("Theme.SurfaceAlt", darkMode ? "#303A33" : "#F0F1E9");
+        SetThemeBrush("Theme.Input", darkMode ? "#222A25" : "#FFFEFA");
+        SetThemeBrush("Theme.Text", darkMode ? "#F4F3ED" : "#242A2C");
+        SetThemeBrush("Theme.Muted", darkMode ? "#B4BDB2" : "#6D7471");
+        SetThemeBrush("Theme.MutedStrong", darkMode ? "#C5CEC3" : "#5D6860");
+        SetThemeBrush("Theme.Subtle", darkMode ? "#9AA69A" : "#80877D");
+        SetThemeBrush("Theme.Border", darkMode ? "#39443D" : "#DFDFD6");
+        SetThemeBrush("Theme.BorderStrong", darkMode ? "#48534A" : "#D4D8CF");
+        SetThemeBrush("Theme.InputBorder", darkMode ? "#4A574D" : "#D6DBD1");
+        SetThemeBrush("Theme.Accent", darkMode ? "#B8D5B9" : "#4A7257");
+        SetThemeBrush("Theme.AccentText", darkMode ? "#C6DFC5" : "#4A7257");
+        SetThemeBrush("Theme.AccentSurface", darkMode ? "#34443A" : "#E8EEE1");
+        SetThemeBrush("Theme.AccentBorder", darkMode ? "#506852" : "#DDE6D8");
+        SetThemeBrush("Theme.ProgressBackground", darkMode ? "#39433D" : "#E9EBE3");
+        SetThemeBrush("Theme.Progress", darkMode ? "#A8C6A7" : "#7D9E7D");
         SetThemeBrush("Theme.Danger", darkMode ? "#F08B8B" : "#A34848");
-        SetThemeBrush("Theme.Good", "#73D6B0");
-        SetThemeBrush("Theme.Website", darkMode ? "#70CDB4" : "#54B69B");
-        SetThemeBrush("Theme.Separator", darkMode ? "#343B49" : "#E5E9EF");
-        SetThemeBrush("Theme.ButtonSurface", darkMode ? "#303642" : "#F0F2F7");
-        SetThemeBrush("Theme.Slate", darkMode ? "#D6DCE6" : "#35415E");
-        SetThemeBrush("Theme.OnAccent", darkMode ? "#151821" : "#FFFFFF");
+        SetThemeBrush("Theme.Good", darkMode ? "#83B58D" : "#86AA83");
+        SetThemeBrush("Theme.Website", darkMode ? "#90BEA2" : "#7D9E7D");
+        SetThemeBrush("Theme.Separator", darkMode ? "#39443D" : "#DFDFD6");
+        SetThemeBrush("Theme.ButtonSurface", darkMode ? "#343E36" : "#EBEEE6");
+        SetThemeBrush("Theme.Slate", darkMode ? "#D8E0D6" : "#35483B");
+        SetThemeBrush("Theme.OnAccent", darkMode ? "#1D2420" : "#FFFFFF");
         SetThemeBrush("Theme.Overlay", darkMode ? "#B3000000" : "#660D1424");
-        SetThemeBrush("Theme.LockOverlay", darkMode ? "#CC151821" : "#CCF4F6FA");
+        SetThemeBrush("Theme.LockOverlay", darkMode ? "#CC1D2420" : "#CCF5F4EF");
         UpdateNavigationSelection();
     }
 

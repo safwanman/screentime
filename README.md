@@ -42,3 +42,12 @@ Open the **Data tools** tab to export usage history as CSV, back up history and 
 5. Open or reload a website in Edge. Its domain will appear in the dashboard while that tab and Edge are active.
 
 The extension sends only the focused, visible tab's hostname to the desktop app over loopback and stops its periodic check for hidden or unfocused tabs. Full URLs, page titles, and page content are not collected. App history stays on this PC.
+
+## Free marketing website
+
+The static landing page is in the `site` folder and has no paid hosting, third-party scripts, or build dependencies. To publish it free with GitHub Pages:
+
+1. In the repository settings, open **Pages** and set the build and deployment source to **GitHub Actions**.
+2. Push a change to `main`, or run the **Deploy marketing site** workflow manually from the Actions tab.
+
+The workflow publishes the contents of `site` to GitHub Pages.
